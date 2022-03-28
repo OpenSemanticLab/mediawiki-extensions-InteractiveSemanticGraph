@@ -1,0 +1,40 @@
+{
+    "manifest_version":2,
+    "name":"Template",
+    "version":"0.0.1",
+    "author":[
+        "[https://github.com/simontaurus Simon Stier]"
+    ],
+    "url":"https://github.com/simontaurus/mediawiki-extensions-Template",
+    "descriptionmsg":"template-desc",
+    "namemsg":"template-name",
+    "license-name":"AGPL-3.0-or-later",
+    "type":"editor",
+    "requires":{
+        "MediaWiki":">= 1.31"
+    },
+    "MessagesDirs":{
+        "Template":[
+            "i18n"
+        ]
+    },
+    "ResourceModules":{
+        "ext.Template":{
+            "localBasePath":"modules/ext.Template",
+            "remoteExtPath":"Template/modules/ext.Template",
+            "styles":[
+                "Template.css"
+            ],
+            "scripts":[
+                "Template.js"
+            ],
+            "position":"bottom"
+        }
+    },
+    "AutoloadClasses":{
+        "Template":"includes/Template.php"
+    },
+    "Hooks":{
+        "BeforePageDisplay":"Template::onBeforePageDisplay"
+    }
+}
