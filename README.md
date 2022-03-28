@@ -1,18 +1,11 @@
-# mediawiki-extensions-Template
+# mediawiki-extensions-InteractiveSemanticGraph
 
-## initialize this template
+Visualizes SemanticMediawiki data with VisNetwork.js
 
-1. replace all names within files
+## Usage
+
+Insert a div with class 'InteractiveSemanticGraph' into any page
 ```
-find . -not -path '*/.*' -type f -exec sed -i 's/template/extension-name/g' {} +
-find . -not -path '*/.*' -type f -exec sed -i 's/Template/ExtensionName/g' {} +
+<div style="width: 100%;" class="InteractiveSemanticGraph">{ "root":"TestPage", "properties":["HasProperty1", "HasProperty2] }</div>
 ```
-
-
-1. replace all file and dir names (run twice)
-```
-find .  -name '*Template*' -not -path '*/.*' -exec bash -c ' mv $0 ${0/\Template/ExtensionName}' {} \;
-find .  -name '*Template*' -not -path '*/.*' -exec bash -c ' mv $0 ${0/\Template/ExtensionName}' {} \;
-```
-
-
+The text inside the div contains a json config. 'root' is the page to start with. 'properties' are the properties that a queried with a double-click on any node by default

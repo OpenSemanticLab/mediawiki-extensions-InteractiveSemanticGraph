@@ -1,40 +1,41 @@
 {
     "manifest_version":2,
-    "name":"Template",
+    "name":"InteractiveSemanticGraph",
     "version":"0.0.1",
     "author":[
-        "[https://github.com/simontaurus Simon Stier]"
+        "[https://github.com/simontaurus Simon Stier]",
+        "[https://github.com/AlexanderPraktikum2021 Alexander Triol]"
     ],
-    "url":"https://github.com/simontaurus/mediawiki-extensions-Template",
-    "descriptionmsg":"template-desc",
-    "namemsg":"template-name",
+    "url":"https://github.com/simontaurus/mediawiki-extensions-InteractiveSemanticGraph",
+    "descriptionmsg":"interactive-semantic-graph-desc",
+    "namemsg":"interactive-semantic-graph-name",
     "license-name":"AGPL-3.0-or-later",
     "type":"editor",
     "requires":{
         "MediaWiki":">= 1.31"
     },
     "MessagesDirs":{
-        "Template":[
+        "InteractiveSemanticGraph":[
             "i18n"
         ]
     },
     "ResourceModules":{
-        "ext.Template":{
-            "localBasePath":"modules/ext.Template",
-            "remoteExtPath":"Template/modules/ext.Template",
+        "ext.InteractiveSemanticGraph":{
+            "localBasePath":"modules/ext.InteractiveSemanticGraph",
+            "remoteExtPath":"InteractiveSemanticGraph/modules/ext.InteractiveSemanticGraph",
             "styles":[
-                "Template.css"
+                "InteractiveSemanticGraph.css"
             ],
             "scripts":[
-                "Template.js"
+                "InteractiveSemanticGraph.js"
             ],
             "position":"bottom"
         }
     },
     "AutoloadClasses":{
-        "Template":"includes/Template.php"
+        "InteractiveSemanticGraph":"includes/InteractiveSemanticGraph.php"
     },
     "Hooks":{
-        "BeforePageDisplay":"Template::onBeforePageDisplay"
+        "BeforePageDisplay":"InteractiveSemanticGraph::onBeforePageDisplay"
     }
 }

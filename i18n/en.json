@@ -1,7 +1,7 @@
 {
 	"@metadata": {
-		"authors": ["Simon Stier"]
+		"authors": ["Simon Stier", "Alexander Triol"]
 	},
-	"template-editor-desc": "Template for mediawiki extensions",
-	"template-editor-name": "Template"
+	"interactive-semantic-graph-editor-desc": "InteractiveSemanticGraph for mediawiki extensions",
+	"interactive-semantic-graph-editor-name": "InteractiveSemanticGraph"
 }
