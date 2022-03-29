@@ -78,7 +78,7 @@ $(document).ready(function() {
                 fetch(createUrl(root, properties))
                     .then(response => response.json())
                     .then(data => {
-                    	if (!nodeID){ //first query on root node
+                    	if (!nodeID && root){ //first query on root node
                     		var rootNode = nodes.get(root);
                     		rootNode.url = data.query.results[root].fullurl;
                     		if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
@@ -699,7 +699,7 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
             	var timeDiff = timeNow - start
             	if(timeDiff > 300){
             		start = Date.now();
-                console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
+                //console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
                 
 				//console.log(edges.get(network.getEdgeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
                 
@@ -740,11 +740,17 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
                         y: params.pointer.DOM.y
                     })) {
                     params.event.preventDefault();
+					
+					const nodeID = nodes.get(network.getNodeAt({x: params.pointer.DOM.x,y: params.pointer.DOM.y})).id;
+					const subject = nodeID.split("#")[0];
+					var subObject = "";
+					if (nodeID.split("#")[1]) {
+						subObject = nodeID.split("#")[1].replace(" ", "_");
+					}
+					//inverse properties are only available in html format
+					const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":0, "type":"html"}&format=json`;
 
-                    fetch('/w/api.php?action=smwbrowse&browse=subject&params={"subject":"' + encodeURIComponent(nodes.get(network.getNodeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        })).id) + '","options":{"showAll":"true"}, "ns":0, "type":"html"}&format=json') //inverse properties are only available in html format
+                    fetch(query) 
                         .then(response => response.json())
                         .then(data => {
                         	var selected_node =  nodes.get(network.getNodeAt({
@@ -773,10 +779,10 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
 								if ($prop.attr('title') === "Special:Categories") propName += "Category";
 								else propName += $prop.attr('href').split("Property:")[1].split("&")[0];
 								page_properties.push(propName);
-								console.log(propName);
+								//console.log(propName);
 								$(this).find("div.smwb-propval span.smwb-value").each(function(){
 									var value = $(this).find("a").attr("title");
-									console.log("-> " + value);
+									//console.log("-> " + value);
 								});
 							})
 							$html.find("div.smwb-ipropvalue").each(function(){
@@ -787,10 +793,10 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
 								if ($prop.attr('title') === "Special:Categories") propName += "Category";
 								else propName += $prop.attr('href').split("Property:")[1].split("&")[0];
 								page_properties.push(propName);
-								console.log(propName);
+								//console.log(propName);
 								$(this).find("div.smwb-propval span.smwb-ivalue").each(function(){
 									var value = $(this).find("a").attr("title");
-									console.log("-> " + value);
+									//console.log("-> " + value);
 								});
 							})
 							for (var i = 0; i < page_properties.length; i++) {
