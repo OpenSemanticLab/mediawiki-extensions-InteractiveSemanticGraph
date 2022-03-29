@@ -5,8 +5,8 @@ $(document).ready(function() {
         var editNodes = {};
         var editDeletedEdges = {};
         var editDeletedNodes = {};
-        $(".visNetworkGraph").each(function(index) {
-            if ($('.visNetworkGraph').length) { //check if div element(s) exist
+        $(".InteractiveSemanticGraph").each(function(index) {
+            if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
                 var input = JSON.parse(this.innerHTML);
                 // create an array with nodes
                 var nodes = new vis.DataSet([]);
@@ -147,7 +147,7 @@ $(document).ready(function() {
                 }
                 fetchData(input.root, input.properties);
                 // create a network
-                var container = this; //document.getElementById("visNetworkGraph");
+                var container = this; //document.getElementById("InteractiveSemanticGraph");
                 var data = {
                     nodes: nodes,
                     edges: edges,
