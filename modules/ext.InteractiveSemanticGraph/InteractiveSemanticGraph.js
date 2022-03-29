@@ -78,7 +78,11 @@ $(document).ready(function() {
                 fetch(createUrl(root, properties))
                     .then(response => response.json())
                     .then(data => {
-                    
+                    	if (!nodeID && root){ //first query on root node
+                    		var rootNode = nodes.get(root);
+                    		rootNode.url = data.query.results[root].fullurl;
+                    		if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
+                    	}
                         for (var i = 0; i < properties.length; i++) {
                             for (var j = 0; j < data.query.results[root].printouts[properties[i]].length; j++) {
                             
@@ -736,11 +740,17 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
                         y: params.pointer.DOM.y
                     })) {
                     params.event.preventDefault();
+					
+					const nodeID = nodes.get(network.getNodeAt({x: params.pointer.DOM.x,y: params.pointer.DOM.y})).id;
+					const subject = nodeID.split("#")[0];
+					var subObject = "";
+					if (nodeID.split("#")[1]) {
+						subObject = nodeID.split("#")[1].replace(" ", "_");
+					}
+					//inverse properties are only available in html format
+					const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":0, "type":"html"}&format=json`;
 
-                    fetch('/w/api.php?action=smwbrowse&browse=subject&params={"subject":"' + encodeURIComponent(nodes.get(network.getNodeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        })).id) + '","ns":0}&format=json')
+                    fetch(query) 
                         .then(response => response.json())
                         .then(data => {
                         	var selected_node =  nodes.get(network.getNodeAt({
@@ -759,6 +769,47 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
                                 ul.prepend(li);
                         		
                         	}
+                        	var page_properties = [];
+                        	$html = $(data.query);
+							$html.find("div.smwb-propvalue").each(function(){
+								$prop = $(this).find("div.smwb-prophead a");
+								//var propName = $prop.text();
+								//var propName = $prop.attr('title').replace("Property:", "");
+								var propName = "";
+								if ($prop.attr('title') === "Special:Categories") propName += "Category";
+								else propName += $prop.attr('href').split("Property:")[1].split("&")[0];
+								page_properties.push(propName);
+								//console.log(propName);
+								$(this).find("div.smwb-propval span.smwb-value").each(function(){
+									var value = $(this).find("a").attr("title");
+									//console.log("-> " + value);
+								});
+							})
+							$html.find("div.smwb-ipropvalue").each(function(){
+								$prop = $(this).find("div.smwb-prophead a");
+								//var propName = $prop.text();
+								//var propName = $prop.attr('title').replace("Property:", "");
+								var propName = "-";
+								if ($prop.attr('title') === "Special:Categories") propName += "Category";
+								else propName += $prop.attr('href').split("Property:")[1].split("&")[0];
+								page_properties.push(propName);
+								//console.log(propName);
+								$(this).find("div.smwb-propval span.smwb-ivalue").each(function(){
+									var value = $(this).find("a").attr("title");
+									//console.log("-> " + value);
+								});
+							})
+							for (var i = 0; i < page_properties.length; i++) {
+	                            if (!page_properties[i].startsWith("_")) {
+	                                 var li = document.createElement("li");
+	                                 li.dataset.action = page_properties[i].replaceAll('_',' ');
+	                                 li.innerHTML = page_properties[i].replaceAll('_',' ');
+	                                 ul.append(li);
+	                            }
+	                        }
+	                        
+                        	/* old: use json result */
+                        	/*
                         	var page_properties = data.query.data; //normal page
                         	if (selected_node.id.includes('#')) { //subobject
                         		for (var i = 0; i < data.query.sobj.length; i++) { 
@@ -771,11 +822,11 @@ function dfs(start, end, currentPath, allPaths, visitedNodes){
 	                        for (var i = 0; i < page_properties.length; i++) {
 	                            if (!page_properties[i].property.startsWith("_")) {
 	                                 var li = document.createElement("li");
-	                                 li.dataset.action = page_properties[i].property;
-	                                 li.innerHTML = page_properties[i].property;
+	                                 li.dataset.action = page_properties[i].property.replaceAll('_',' ');
+	                                 li.innerHTML = page_properties[i].property.replaceAll('_',' ');
 	                                 ul.append(li);
 	                            }
-	                        }
+	                        }*/
 
                             $(".custom-menu li").click(function() {
 
