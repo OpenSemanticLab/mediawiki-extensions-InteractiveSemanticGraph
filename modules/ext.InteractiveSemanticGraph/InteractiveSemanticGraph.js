@@ -52,6 +52,8 @@ $(document).ready(function() {
                 });
                 //Creates API query Url with the given root and properties
                 function createUrl(root, properties) {
+                	if (properties[0] === "-Category") properties[0] = "Category";
+                	else if (root.startsWith("Category:")) root = ":" + root; //[[Category:X]] queries pages within this category, [[:Category:X]] the category itself
                     var url = `/w/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
                     var propertiesVar = '';
                     for (var i = 0; i < properties.length; i++) {
@@ -675,13 +677,21 @@ $(document).ready(function() {
                                 x: params.pointer.DOM.x,
                                 y: params.pointer.DOM.y
                             })).id;
-                            const subject = nodeID.split("#")[0];
+                            var subject = nodeID.split("#")[0];
                             var subObject = "";
                             if (nodeID.split("#")[1]) {
                                 subObject = nodeID.split("#")[1].replace(" ", "_");
                             }
+                            var namespace_id = 0;
+                            if (subject.split(":")[1]) {
+                            	const namespace = subject.split(":")[0];
+                            	subject = subject.split(":")[1];
+                            	namespace_id = mw.config.get('wgNamespaceIds')[namespace.replaceAll(" ","_").toLowerCase()];
+                            	//console.log(`Namespace ${namespace}, ID ${namespace_id}`);
+                            }
+                            
                             //inverse properties are only available in html format
-                            const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":0, "type":"html"}&format=json`;
+                            const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":${namespace_id}, "type":"html"}&format=json`;
                             fetch(query)
                                 .then(response => response.json())
                                 .then(data => {
@@ -705,7 +715,9 @@ $(document).ready(function() {
                                         //var propName = $prop.attr('title').replace("Property:", "");
                                         var propName = "";
                                         if ($prop.attr('title') === "Special:Categories") propName += "Category";
-                                        else propName += $prop.attr('href').split("Property:")[1].split("&")[0];
+                                        else if ($prop.attr('title') === "Special:ListRedirects") return;
+                                        else if ($prop.attr('href')) propName += $prop.attr('href').split("Property:")[1].split("&")[0];
+                                        else return; //empty property
                                         page_properties.push(propName);
                                         //console.log(propName);
                                         $(this).find("div.smwb-propval span.smwb-value").each(function() {
@@ -719,7 +731,9 @@ $(document).ready(function() {
                                         //var propName = $prop.attr('title').replace("Property:", "");
                                         var propName = "-";
                                         if ($prop.attr('title') === "Special:Categories") propName += "Category";
-                                        else propName += $prop.attr('href').split("Property:")[1].split("&")[0];
+                                        else if ($prop.attr('title') === "Special:ListRedirects") return;
+                                        else if ($prop.attr('href')) propName += $prop.attr('href').split("Property:")[1].split("&")[0];
+                                        else return; //empty property
                                         page_properties.push(propName);
                                         //console.log(propName);
                                         $(this).find("div.smwb-propval span.smwb-ivalue").each(function() {
