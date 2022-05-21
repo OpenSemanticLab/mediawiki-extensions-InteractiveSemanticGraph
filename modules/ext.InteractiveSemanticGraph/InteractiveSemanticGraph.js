@@ -19,18 +19,13 @@ $(document).ready(function() {
                 givenDiv.style.position = "relative";
                 givenDiv.style.display = "inline-block";
 
-                function getColor() {
-                    return "hsl(" + 360 * Math.random() + ',' +
-                        (25 + 70 * Math.random()) + '%,' +
-                        (85 + 10 * Math.random()) + '%)';
-                }
+				//Function for random colors
                 var h = Math.random();
                 var golden = 0.618033988749895;
 
                 function randomHSL() {
                     h += golden;
                     h %= 1;
-                    //~~(360 * Math.random())
                     return "hsla(" + (360 * h) + "," +
                         "70%," +
                         "80%,1)";
@@ -44,7 +39,7 @@ $(document).ready(function() {
                     if (node === null) return false;
                     else return id;
                 }
-                //var colors = ['#ff7878', '#73ff77', '#e878ff', '#ffae57', '#80f8ff', '#ffff75', '#adadad', '#b482ff'];
+
                 nodes.add({
                     id: input.root,
                     label: input.root, //todo: query display title
@@ -57,7 +52,8 @@ $(document).ready(function() {
                     var url = `/w/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
                     var propertiesVar = '';
                     for (var i = 0; i < properties.length; i++) {
-                        propertiesVar += '|?' + encodeURIComponent(properties[i]);
+                        propertiesVar += '|?' + encodeURIComponent(properties[i]) + "=" + encodeURIComponent(properties[i]); //explicit label overwrites property display title. ToDo: extrakt label in result and get corresponding printout
+                        propertiesVar += '|?' + encodeURIComponent(properties[i] + ".Display title of") + "=" + encodeURIComponent(properties[i] + ".Display title of"); //explicit query for display title due to slow update of the displaytitle page field 
                     }
                     url = url + propertiesVar + '&format=json';
                     return url;
@@ -73,8 +69,11 @@ $(document).ready(function() {
                                 rootNode.url = data.query.results[root].fullurl;
                                 if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
                             }
+
                             for (var i = 0; i < properties.length; i++) {
+
                                 for (var j = 0; j < data.query.results[root].printouts[properties[i]].length; j++) {
+
                                     //define colors
                                     if (!(properties[i] in legendColors) && setColor) {
                                         legendColors[properties[i]] = colors[i];
@@ -87,9 +86,11 @@ $(document).ready(function() {
                                     var id = "";
                                     var label = "";
                                     if (data.query.results[root].printouts[properties[i]][j].fulltext) id = data.query.results[root].printouts[properties[i]][j].fulltext;
-                                    else if (data.query.results[root].printouts[properties[i]][j].value) id = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit;
+                                    else if (data.query.results[root].printouts[properties[i]][j].value) id = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
+                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) id = new Date(data.query.results[root].printouts[properties[i]][j].timestamp*1000).toISOString(); //datetime
                                     else id = data.query.results[root].printouts[properties[i]][j].toString();
                                     if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle;
+                                    if (data.query.results[root].printouts[properties[i] + ".Display title of"][j]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j]; //explicit use property display title due to slow update of the displaytitle page field
                                     if (label === "") label = id;
                                     if (isLabelSet(id) === false) {
                                         if (setGroup && setColor) {
@@ -221,44 +222,42 @@ $(document).ready(function() {
                     };
                 }
                 var network = new vis.Network(container, data, options);
-
+				
+				//The function getAllEdgesBetween() returns all edges between two nodes
                 function getAllEdgesBetween(node1, node2) {
                     return edges.get().filter(function(edge) {
                         return (edge.from === node1 && edge.to === node2) || (edge.from === node2 && edge.to === node1);
                     });
                 }
-
+                
+                //Cartesian Product of arrays
+                function cartesianProduct(arr) {
+				    return arr.reduce(function(a,b){
+				        return a.map(function(x){
+				            return b.map(function(y){
+				                return x.concat([y]);
+				            })
+				        }).reduce(function(a,b){ return a.concat(b) },[])
+				    }, [[]])
+				}
+				//Cartesian Product of given arrays
                 function getAllCombs(arrays) {
-                    var numberOfCombs = 1;
-                    for (var i = 0; i < arrays.length; i++) {
-                        numberOfCombs = numberOfCombs * arrays[i].length;
-                    }
-                    var allCombs = new Array(numberOfCombs);
-                    for (var i = 0; i < allCombs.length; i++) {
-                        allCombs[i] = new Array(arrays.length);
-                    }
-                    for (var i = 0; i < arrays.length; i++) {
-                        var current = arrays[i];
-                        for (var c = 0; c < numberOfCombs; c++) {
-                            for (var j = 0; j < current.length; j++) {
-                                allCombs[c][i] = current[c % current.length];
-                            }
-                        }
-                    }
+                	var allCombs = cartesianProduct(arrays);
                     return allCombs;
                 }
-
+				//Gets Path array with nodes, returns Cartesian Product  of edges
                 function getEdgePathsForPath(path) {
                     var arraysOfEdgesForNodeInPath = [];
                     for (var i = 1; i < path.length; i++) {
                         var edgesBetween = getAllEdgesBetween(path[i - 1], path[i]);
                         var localedgesBetween = edgesBetween.slice();
+                        
                         arraysOfEdgesForNodeInPath.push(localedgesBetween);
                     }
                     var allEdgePaths = getAllCombs(arraysOfEdgesForNodeInPath);
                     return allEdgePaths;
                 }
-
+				//Given Label is reversed with "-" or "-" is removed
                 function reverseLabel(label) {
                     if (label[0] == "-") {
                         return label.substring(1);
@@ -266,7 +265,7 @@ $(document).ready(function() {
                         return "-" + label;
                     }
                 }
-
+				//Gets Path array with nodes, returns all possible edge paths
                 function getEdgeLabelStringsForPath(path) {
                     var allEdgePaths = getEdgePathsForPath(path);
                     var allStrings = new Array(allEdgePaths.length);
@@ -290,7 +289,7 @@ $(document).ready(function() {
                     }
                     return allStrings;
                 }
-
+				//Gets Path arrays with nodes, returns all possible edge paths
                 function getAllStringsForAllPaths(paths) {
                     var arrayOfAllStrings = [];
                     for (var i = 0; i < paths.length; i++) {
@@ -300,7 +299,7 @@ $(document).ready(function() {
                     }
                     return arrayOfAllStrings;
                 }
-
+				//Removes the given value from the given array
                 function removeItem(arr, value) {
                     var index = arr.indexOf(value);
                     if (index > -1) {
@@ -308,7 +307,7 @@ $(document).ready(function() {
                     }
                     return arr;
                 }
-
+				//Returns all paths between startNode and endNode
                 function findAllPaths(startNode, endNode) {
                     var visitedNodes = [];
                     var currentPath = [];
@@ -316,7 +315,7 @@ $(document).ready(function() {
                     dfs(startNode, endNode, currentPath, allPaths, visitedNodes);
                     return allPaths;
                 }
-
+				//Algorithm to search for all paths between two nodes
                 function dfs(start, end, currentPath, allPaths, visitedNodes) {
                     if (visitedNodes.includes(start)) return;
                     visitedNodes.push(start);
@@ -336,7 +335,7 @@ $(document).ready(function() {
                     currentPath.pop();
                     removeItem(visitedNodes, start);
                 }
-                //This function deletes all children of a given node.
+                //Algorithm that gets all nodes that are reachable from the given node in the graph 
                 function getAllReachableNodesTo(nodeId, excludeIds, reachableNodes) {
                     if (reachableNodes.includes(nodeId) || excludeIds.includes(nodeId)) {
                         return;
@@ -349,7 +348,7 @@ $(document).ready(function() {
                         //reachableNodes.push(children[i]);
                     }
                 }
-
+				//This function deletes all children of a given node.
                 function deleteNodesChildren(nodeId, deleteEdge) {
                     var excludedIds = [];
                     if (deleteEdge === true) {
@@ -375,7 +374,7 @@ $(document).ready(function() {
                     }
                     return nodesToDelete;
                 }
-
+				//Deletes all edges from given node
                 function deleteEdges(nodeID) {
                     var fromEdges = edges.get({
                         filter: function(item) {
@@ -389,6 +388,7 @@ $(document).ready(function() {
                 var nodesClicked = [];
                 var tip = '<p><strong>Hinweis:</strong> Um sich einen Pfad zwischen zwei Knoten ausgeben zu lassen, <em>Strg</em> gedrückt halten und die gewünschten zwei Knoten mit der <em>linken Maustaste</em> anklicken. </p>'
                 this.insertAdjacentHTML('afterbegin', tip);
+                //Ctrl and click on two nodes, puts out all possible paths between the two nodes under the tip
                 network.on("click", function(params) {
                     if (params.nodes[0] && params.event.srcEvent.ctrlKey) {
                         if (nodesClicked.length < 2) {
@@ -427,12 +427,12 @@ $(document).ready(function() {
                                     }
                                 }
                                 stringDiv.innerHTML += "<br>"
-                                stringDiv.innerHTML += "<strong>Kanten:</strong> "
+                                stringDiv.innerHTML += "<strong>Kanten:</strong><br>"
                                 for (var t = 0; t < allStringsArray[s].length; t++) {
                                     var currentString = allStringsArray[s][t];
                                     var currentFoundPath = foundPaths[s][t];
                                     var stringDiv = givenDiv.querySelector('#fullPath' + pathId);
-                                    stringDiv.innerHTML = stringDiv.innerHTML + currentString;
+                                    stringDiv.innerHTML = stringDiv.innerHTML + '&#9679; ' + currentString + '<br>';
                                 }
                                 stringDiv.innerHTML += "<br>"
                             }
@@ -450,8 +450,10 @@ $(document).ready(function() {
                     }
                 });
                 var contextCreatedProps = [];
+                
                 network.on("doubleClick", function(params) {
                     if (params.nodes[0]) {
+                    	//Checks if all node children are created from context menu or manually, if so it creates nodes for before defined properties else it deletes all children
                         var conManNodes = network.getConnectedNodes(params.nodes[0], 'to');
                         var onlyConManNodes = true;
                         for (var i = 0; i < conManNodes.length; i++) {
@@ -606,6 +608,7 @@ $(document).ready(function() {
                 objClickedProps = {};
                 objColors = {};
                 var start = 0;
+                //On a node right click it puts out all properties of the clicked node and a link to the node wiki-page
                 network.on("oncontext", function(params) {
                     params.event.preventDefault();
                     var timeNow = Date.now();
@@ -768,6 +771,7 @@ $(document).ready(function() {
 	                                 ul.append(li);
 	                            }
 	                        }*/
+	                        		//On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
                                     $(".custom-menu li").click(function() {
                                         var clickedProperty = [$(this).attr("data-action")]
                                         var clickedPropertyColor = randomHSL();
@@ -849,7 +853,7 @@ $(document).ready(function() {
                         }
                     }
                 });
-                // If the document is clicked somewhere
+                // If the document is clicked somewhere it hides the context menu
                 $(document).bind("mousedown", function(e) {
                     // If the clicked element is not the menu
                     if (!$(e.target).parents(".custom-menu").length > 0) {
@@ -857,7 +861,7 @@ $(document).ready(function() {
                         $(".custom-menu").hide(100);
                     }
                 });
-
+				//Add Node popup
                 function editNode(data, cancelAction, callback) {
                     var newNodeActive = true;
                     document.getElementById("node-label").value = data.label;
@@ -882,7 +886,7 @@ $(document).ready(function() {
                         newNodeActive = false;
                     });
                 }
-                // Callback passed as parameter is ignored
+				
                 function clearNodePopUp() {
                     document.getElementById("node-saveButton").onclick = null;
                     document.getElementById("node-cancelButton").onclick = null;
@@ -893,7 +897,7 @@ $(document).ready(function() {
                     clearNodePopUp();
                     callback(null);
                 }
-
+				//saveNodeData to the graph
                 function saveNodeData(data, callback) {
                     data.label = document.getElementById("node-label").value;
                     data.id = document.getElementById("node-label").value;
@@ -903,14 +907,12 @@ $(document).ready(function() {
                     clearNodePopUp();
                     callback(data);
                 }
-
+				//addEdge popup
                 function editEdgeWithoutDrag(data, callback) {
                     var newEdgeActive = true;
                     // filling in the popup DOM elements
                     document.getElementById("edge-label").value = data.label;
-                    /*if(data.from === "H.1"){
-  	console.log("here");
-  	return;}*/
+                    
                     document.getElementById("edge-saveButton").onclick = saveEdgeData.bind(
                         this,
                         data,
@@ -952,6 +954,7 @@ $(document).ready(function() {
                     }
                 }
                 var pageBool;
+                //Checks if page exists in the wiki
                 async function pageExists(id) {
                     await fetch('/w/api.php?action=parse&page=' + id + '&prop=wikitext&format=json')
                         .then(response => response.json())
@@ -966,6 +969,7 @@ $(document).ready(function() {
                 }
                 var wikiText = "";
                 var semantic = "";
+                //Splits Wikitext and Semantic/Element or Semantic/Link
                 async function editWikiText(node) {
                     await fetch('/w/api.php?action=parse&page=' + node + '&prop=wikitext&format=json')
                         .then(response => response.json())
@@ -980,6 +984,7 @@ $(document).ready(function() {
                                     if (i == found.length - 1) {
                                         semantic += found[i];
                                         newWikiText = newWikiText.replace(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\}[\r\n]*\}[\r\n]*\})/g, "");
+                                        newWikiText = newWikiText.replace(/(\{\{Semantic\/Link[^}]*[\r\n]*\}[\r\n]*\})/g, "");
                                     } else {
                                         semantic += found[i];
                                         newWikiText = newWikiText.replace(found[i], "");
@@ -990,7 +995,9 @@ $(document).ready(function() {
                         });
                     return [semantic, wikiText];
                 }
+                //Save button on create edge popup
                 async function saveEdgeData(data, callback) {
+                	//Sets various options to the nodes that the edge gets connected
                     if (typeof data.to === "object") data.to = data.to.id;
                     if (typeof data.from === "object") data.from = data.from.id;
                     data.label = document.getElementById("edge-label").value;
@@ -1024,6 +1031,7 @@ $(document).ready(function() {
                         fromNode.color = data.color;
                         fromNode.manually = true;
                     }
+                    //If the given property is not set in the legend, a legend entry is created
                     if (!(contextCreatedProps.includes(data.label) || input.properties.includes(data.label))) {
                         contextCreatedProps.push(data.label);
                         var propertyContainer = document.createElement("div");
@@ -1054,6 +1062,7 @@ $(document).ready(function() {
                         propertyContainer.append(propertyName);
                         legendColors[data.label] = data.color;
                     }
+                    //Creates new wikitext that will be saved after the save button is clicked
                     if (isLabelReversed(data.label)) {
                         if (await pageExists(fromNode.id) === false) {
                             if (!(newNodes[fromNode.id])) {
@@ -1071,7 +1080,7 @@ $(document).ready(function() {
                                     '|value=' + fromNode.id +
                                     '}}' + '';
                             } else {
-                                if (splitWikiText[0]) {
+                                if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
                                     editNodes[toNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
                                         '|property=' + reverseLabel(data.label) +
                                         '|value=' + fromNode.id +
@@ -1084,7 +1093,7 @@ $(document).ready(function() {
                                         '{{Semantic/Link' +
                                         '|property=' + reverseLabel(data.label) +
                                         '|value=' + fromNode.id +
-                                        '}}' + '';
+                                        '}}' + '' + splitWikiText[0];
                                 }
                             }
                         } else {
@@ -1121,7 +1130,7 @@ $(document).ready(function() {
                                     '|value=' + toNode.id +
                                     '}}' + '';
                             } else {
-                                if (splitWikiText[0]) {
+                                if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
                                     editNodes[fromNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
                                         '|property=' + data.label +
                                         '|value=' + toNode.id +
@@ -1134,7 +1143,7 @@ $(document).ready(function() {
                                         '{{Semantic/Link' +
                                         '|property=' + data.label +
                                         '|value=' + toNode.id +
-                                        '}}' + '';
+                                        '}}' + '' + splitWikiText[0];
                                 }
                             }
                         } else {
@@ -1157,21 +1166,23 @@ $(document).ready(function() {
                     }
                     //console.log(toNode);
                     //console.log(fromNode);
-                    console.log(editNodes);
-                    console.log(newNodes);
+                    //console.log(editNodes);
+                    //console.log(newNodes);
                     clearEdgePopUp();
                     callback(data);
                     network.setOptions(options);
                     network.body.emitter.emit('_dataChanged');
                     network.redraw();
                 }
+                //save button
                 var saveBtn = document.createElement("button");
                 saveBtn.addEventListener("click", saveGraphChanges);
                 saveBtn.innerHTML = "Speichern";
                 saveBtn.style.width = "auto";
                 saveBtn.style.height = "auto";
                 givenDiv.appendChild(saveBtn);
-
+				
+				//Called on save button click. Creates new wiki pages or edits them with the created wiki text.
                 function saveGraphChanges() {
                     var alertString = "";
                     OO.ui.confirm('Änderungen übernehmen?').done(async function(confirmed) {
@@ -1227,7 +1238,6 @@ $(document).ready(function() {
                                     alertString += "Seite " + key + " wurde gelöscht!\r\n"
                                 });
                             }
-                            console.log(alertString);
                             // Example: Customize the displayed actions at the time the window is opened.
                             var messageDialog = new OO.ui.MessageDialog();
                             // Create and append a window manager.
@@ -1252,9 +1262,8 @@ $(document).ready(function() {
                         } else {}
                     });
                 }
-
+				//Deletes node in manipulation mode and the wiki page.
                 function deleteSelectedNode(data, callback) {
-                    console.log(contextCreatedProps);
                     deleteNodesChildren(data.nodes[0]);
                     nodes.remove(data.nodes[0]);
                     for (var i = 0; i < contextCreatedProps.length; i++) {
@@ -1277,13 +1286,12 @@ $(document).ready(function() {
                     editDeletedNodes["" + data.nodes[0]] = "";
                     delete newNodes["" + data.nodes[0]];
                     delete editNodes["" + data.nodes[0]];
-                    console.log(editDeletedNodes);
                 }
+                //Deletes edge in manipulation mode and deletes the property from the node wikipages
                 async function deleteSelectedEdge(data, callback) {
                     var edgeToNode = edges.get(data.edges[0]).to;
                     var edgeFromNode = edges.get(data.edges[0]).from;
                     var edgeLabel = edges.get(data.edges[0]).label;
-                    console.log(edgeLabel);
                     edges.remove(data.edges[0]);
                     deleteNodesChildren(edgeToNode, true);
                     deleteNodesChildren(edgeFromNode, true);
@@ -1306,7 +1314,6 @@ $(document).ready(function() {
                                 .then(response => response.json())
                                 .then(data => {
                                     var wikiText = data.parse.wikitext['*'];
-                                    console.log(wikiText);
                                     var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`
                                     //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
                                     var re = new RegExp(edgeString, "g");
@@ -1317,7 +1324,6 @@ $(document).ready(function() {
                                             editDeletedEdges["" + edgeToNode] = newWikiText;
                                         } else {
                                             var newWikiText = wikiText.replace(re, "");
-                                            console.log(newWikiText)
                                             editDeletedEdges["" + edgeToNode] = newWikiText;
                                         }
                                     }
@@ -1347,7 +1353,6 @@ $(document).ready(function() {
                                 .then(response => response.json())
                                 .then(data => {
                                     var wikiText = data.parse.wikitext['*'];
-                                    console.log(wikiText);
                                     var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + edgeLabel + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeToNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
                                     //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
                                     var re = new RegExp(edgeString, "g");
@@ -1358,7 +1363,6 @@ $(document).ready(function() {
                                             editDeletedEdges["" + edgeFromNode] = newWikiText;
                                         } else {
                                             var newWikiText = wikiText.replace(re, "");
-                                            console.log(newWikiText)
                                             editDeletedEdges["" + edgeFromNode] = newWikiText;
                                         }
                                     }
@@ -1381,16 +1385,13 @@ $(document).ready(function() {
                                 var newWikiText = wikiText.replace(re, "");
                                 newNodes["" + edgeFromNode] = newWikiText;
                             }
-                            console.log(newNodes);
                         }
                     }
-                    console.log(editDeletedEdges);
                     //nodes.remove(edges.get(data.edges[0]).to);
                     callback(data);
                     document.querySelector('.vis-delete').remove();
-                    console.log(objClickedProps);
-                    console.log(oldGroups);
                 }
+                //HTML for the manipulation popups
                 var editHtml = '' +
                     '<div id="node-popUp">' +
                     '  <span id="node-operation" style="cursor: move;">node</span> <br />' +
@@ -1425,6 +1426,8 @@ $(document).ready(function() {
                 document.body.appendChild(editHtmlDiv);
                 //dragElement(document.getElementById("node-popUp"));
                 //dragElement(document.getElementById("edge-popUp"));
+                
+                //function to make the manipulation popups draggable
                 function dragElement(elmnt) {
                     var pos1 = 0,
                         pos2 = 0,
