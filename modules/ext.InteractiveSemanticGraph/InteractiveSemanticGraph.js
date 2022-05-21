@@ -1,3 +1,10 @@
+/*@nomin*/
+/* 
+DEV: MediaWiki:InteractiveSemanticGraph.js
+REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraph.js
+hint: ResourceLoader minifier does not ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
+*/
+
 $(document).ready(function() {
     $.getScript('https://unpkg.com/vis-network/standalone/umd/vis-network.min.js').done(function() {
         var pathId = 0;
