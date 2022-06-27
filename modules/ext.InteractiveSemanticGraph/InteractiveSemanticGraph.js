@@ -44,11 +44,12 @@ $(document).ready(function() {
         }
         $(".InteractiveSemanticGraph").each( function(index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-            	if(this.innerHTML === ""){
-            		var input = JSON.parse('{ "root":"", "properties":[], "permalink":"false" }');
-            	}else{
-            		var input = JSON.parse(this.innerHTML);	
+            	var defaultOptions = { "root":"", "properties":[], "permalink":false, "edit":false, "hint":false };
+                var userOptions = {};
+            	if(this.innerHTML !== "") {//ToDo: use data attributes
+            		var userOptions = JSON.parse(this.innerHTML);	
             	}
+                var input = {...defaultOptions, ...userOptions};
             	input.depth = parseInt(input.depth);
                 // create an array with nodes
                 var nodes = new vis.DataSet([]);
@@ -253,7 +254,7 @@ $(document).ready(function() {
                         hover: true
                     },
                     manipulation: {
-                        enabled: true,
+                        enabled: input.edit,
                         editEdge: false,
                         deleteNode: function(data, callback) {
                             deleteSelectedNode(data, callback)
@@ -520,7 +521,7 @@ $(document).ready(function() {
                 }
                 var nodesClicked = [];
                 var tip = '<p><strong>Hinweis:</strong> Um sich einen Pfad zwischen zwei Knoten ausgeben zu lassen, <em>Strg</em> gedrückt halten und die gewünschten zwei Knoten mit der <em>linken Maustaste</em> anklicken. </p>'
-                this.insertAdjacentHTML('afterbegin', tip);
+                if (input.hint) this.insertAdjacentHTML('afterbegin', tip);
                 //Ctrl and click on two nodes, puts out all possible paths between the two nodes under the tip
                 network.on("click", function(params) {
                     if (params.nodes[0] && params.event.srcEvent.ctrlKey) {
@@ -1315,10 +1316,10 @@ $(document).ready(function() {
                 //save button
                 var saveBtn = document.createElement("button");
                 saveBtn.addEventListener("click", saveGraphChanges);
-                saveBtn.innerHTML = "Speichern";
+                saveBtn.innerHTML = "Save changes";
                 saveBtn.style.width = "auto";
                 saveBtn.style.height = "auto";
-                givenDiv.appendChild(saveBtn);
+                if (input.edit) givenDiv.appendChild(saveBtn);
                 
                 searchParams = new URLSearchParams(window.location.search);
 				var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
@@ -1326,7 +1327,7 @@ $(document).ready(function() {
 
                 var copy_button = document.createElement("button");
                 copy_button.addEventListener("click", copy_link_data);
-                copy_button.innerHTML = "Graph kopieren";
+                copy_button.innerHTML = "Copy permalink";
                 copy_button.style.width = "auto";
                 copy_button.style.height = "auto";
                 if(requested || input.permalink === "true" || searchParams.has('nodes')){
