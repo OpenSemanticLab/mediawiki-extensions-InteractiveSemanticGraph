@@ -162,6 +162,12 @@ $(document).ready(function() {
                                     if (label === "") label = id; //default label is id
                                     var color = colors[i];
                                     if (isLiteral) color = setColor = "#FFFFFF";
+                                    var shape = image = "undefined";
+                                    if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif")) ) {
+                                        image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:","")}&width=200&height=200`;
+                                        shape = "image";
+                                        label = "";
+                                    }
                                     if (isLabelSet(id) === false) { //test if node with id exists
                                         if (setGroup && setColor) {
                                             nodes.add({
@@ -173,6 +179,8 @@ $(document).ready(function() {
                                                 url: data.query.results[root].printouts[properties[i]][j].fullurl,
                                                 oncontext: true,
                                                 isLiteral: isLiteral,
+                                                image: image,
+                                                shape: shape,
                                             });
                                             oldGroups["" + id] = setGroup[0];
                                         } else {
@@ -184,6 +192,8 @@ $(document).ready(function() {
                                                 hidden: false,
                                                 url: data.query.results[root].printouts[properties[i]][j].fullurl,
                                                 isLiteral: isLiteral,
+                                                image: image,
+                                                shape: shape,
                                             });
                                             oldGroups["" + id] = properties[i];
                                         }
