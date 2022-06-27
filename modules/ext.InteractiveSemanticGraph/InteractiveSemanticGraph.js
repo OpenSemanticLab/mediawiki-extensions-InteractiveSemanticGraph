@@ -110,10 +110,18 @@ $(document).ready(function() {
                     url = url + propertiesVar + '&format=json';
                     return url;
                 }
+
+                function uuidv4() {
+                    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+                    );
+                }
+
                 //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
                 //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
                 var first_call = true;
                 function fetchData(root, properties, nodeID, setGroup, setColor) {
+                    if (nodes.get(root).isLiteral) return false; //don't query on literals
                     fetch(createUrl(root, properties))
                         .then(response => response.json())
                         .then(data => {
@@ -136,16 +144,25 @@ $(document).ready(function() {
                                         colors[i] = legendColors[properties[i]];
                                     }
                                     //define id and label. use displaytitle if available. Use string representation of non-page properties
-                                    var id = "";
+                                    var id = uuidv4(); //default: UUID
                                     var label = "";
-                                    if (data.query.results[root].printouts[properties[i]][j].fulltext) id = data.query.results[root].printouts[properties[i]][j].fulltext;
-                                    else if (data.query.results[root].printouts[properties[i]][j].value) id = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
-                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) id = new Date(data.query.results[root].printouts[properties[i]][j].timestamp*1000).toISOString(); //datetime
-                                    else id = data.query.results[root].printouts[properties[i]][j].toString();
-                                    if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle;
+                                    var isLiteral = true;
+                                    if (data.query.results[root].printouts[properties[i]][j].fulltext) {
+                                        if (data.query.results[root].printouts[properties[i]][j].exists === "1") {
+                                            id = data.query.results[root].printouts[properties[i]][j].fulltext; //use pagename as id for pages
+                                            isLiteral = false;
+                                        }
+                                        else label = data.query.results[root].printouts[properties[i]][j].fulltext; //treat non existing pages as literals
+                                    }
+                                    else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
+                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp*1000).toISOString(); //datetime
+                                    else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
+                                    if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
                                     if (data.query.results[root].printouts[properties[i] + ".Display title of"][j]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j]; //explicit use property display title due to slow update of the displaytitle page field
-                                    if (label === "") label = id;
-                                    if (isLabelSet(id) === false) {
+                                    if (label === "") label = id; //default label is id
+                                    var color = colors[i];
+                                    if (isLiteral) color = setColor = "#FFFFFF";
+                                    if (isLabelSet(id) === false) { //test if node with id exists
                                         if (setGroup && setColor) {
                                             nodes.add({
                                                 id: id,
@@ -155,16 +172,18 @@ $(document).ready(function() {
                                                 hidden: false,
                                                 url: data.query.results[root].printouts[properties[i]][j].fullurl,
                                                 oncontext: true,
+                                                isLiteral: isLiteral,
                                             });
                                             oldGroups["" + id] = setGroup[0];
                                         } else {
                                             nodes.add({
                                                 id: id,
                                                 label: label,
-                                                color: colors[i],
+                                                color: color,
                                                 group: properties[i],
                                                 hidden: false,
-                                                url: data.query.results[root].printouts[properties[i]][j].fullurl
+                                                url: data.query.results[root].printouts[properties[i]][j].fullurl,
+                                                isLiteral: isLiteral,
                                             });
                                             oldGroups["" + id] = properties[i];
                                         }
