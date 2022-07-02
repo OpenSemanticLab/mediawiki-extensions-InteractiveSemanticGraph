@@ -70,14 +70,18 @@ isg.browser = class {
 		
 		this.addTab("Main_page");
 		
-		mw.hook( 'interactivesemanticgraph.node.clicked' ).add( this.navigate.bind(this) );
+		mw.hook( 'isg.node.clicked' ).add( (node) => {
+			if (node.url) { //skip literals
+				this.navigate(node.url, node.label);
+			}
+		});
 	}	
 	
-	navigate(title) {
-		if (this.debug) console.log(`Navigate to ${title}`);
-		this.tabs.find( ".ui-tabs-active" ).find('a').text(title);
+	navigate(url, label) {
+		if (this.debug) console.log(`Navigate to ${label} (${url})`);
+		this.tabs.find( ".ui-tabs-active" ).find('a').text(label);
 		var id = this.tabs.find( ".ui-tabs-active" ).attr( "aria-controls" );
-		$(`#${id}`).find('iframe').attr('src', `/wiki/${title}`);
+		$(`#${id}`).find('iframe').attr('src', url);
 	}
 	
 	addTab(title) {
