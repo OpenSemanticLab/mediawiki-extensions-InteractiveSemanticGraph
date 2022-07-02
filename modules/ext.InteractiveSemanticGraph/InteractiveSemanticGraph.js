@@ -524,7 +524,7 @@ $(document).ready(function() {
                 if (input.hint) this.insertAdjacentHTML('afterbegin', tip);
                 //Ctrl and click on two nodes, puts out all possible paths between the two nodes under the tip
                 network.on("click", function(params) {
-                	mw.hook( 'interactivesemanticgraph.node.clicked' ).fire( params.nodes[0] ); //fire event
+                	mw.hook( 'isg.node.clicked' ).fire( nodes.get(params.nodes[0]) ); //fire event
                     if (params.nodes[0] && params.event.srcEvent.ctrlKey) {
                         if (nodesClicked.length < 2) {
                             nodesClicked.push(params.nodes[0]);
