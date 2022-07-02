@@ -18,13 +18,25 @@ isg.browser = class {
 		
 		this.$element = $(element);
 		this.$element.attr('id', `isgb-${this.uid}-container`);
-		this.$element.attr('style', 'display: flex;');
+		this.$element.attr('style', 'display:grid; grid-template-columns: 1fr 10px 1fr');
 		
-		this.$element.append(`<div id="isgb-${this.uid}-container-left" style="flex: 1.0;">`);
-		this.$element.append(`<div id="isgb-${this.uid}-container-right" style="flex: 1.0;">`);
+		this.containerLeft = $(`<div id="isgb-${this.uid}-container-left">`);
+    	this.containerGutter = $(`
+    		<div class="isgb-resizer" id="isgb-${this.uid}-resizer" 
+    			style="grid-row: 1/-1; cursor: col-resize; grid-column: 2; 
+    			background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=');">
+    		</div>`);
+		this.containerRight = $(`<div id="isgb-${this.uid}-container-right">`);
+		this.$element.append(this.containerLeft, this.containerGutter, this.containerRight);
+		window.Split({
+		  columnGutters: [{
+		    track: 1,
+		    element: this.containerGutter[0],
+		  }]
+		});
+		
 		this.$element.find('.InteractiveSemanticGraph').detach().appendTo(`#isgb-${this.uid}-container-left`); //graph div has to be created in advance for now, move to left side
-		
-		$(`#isgb-${this.uid}-container-right`).append(`<iframe id="isgb-${this.uid}-iframe" src="/wiki/Main_page" frameborder="0" scrolling="yes" style="width: 100%; height: 100%;"></iframe>'`);
+		this.containerRight.append(`<iframe id="isgb-${this.uid}-iframe" src="/wiki/Main_page" frameborder="0" scrolling="yes" style="width: 100%; height: 100%;"></iframe>'`);
 		
 		mw.hook( 'interactivesemanticgraph.node.clicked' ).add( this.navigate.bind(this) );
 	}	
@@ -38,8 +50,18 @@ isg.browser = class {
 
 $(document).ready(function () {
 
-	console.log("InteractiveSemanticGraphBrowser init");
-	$(".InteractiveSemanticGraphBrowser").each( function() {
-		var browser = new isg.browser(this);
+	if (!$(".InteractiveSemanticGraphBrowser")) return;
+	//mw.loader.load("//some-server/some.css", "text/css");
+	$.when(
+		$.getScript("https://unpkg.com/split-grid/dist/split-grid.js"),
+		$.Deferred(function (deferred) {
+			$(deferred.resolve);
+		})
+	).done( function () {
+		console.log("InteractiveSemanticGraphBrowser init");
+		$(".InteractiveSemanticGraphBrowser").each( function() {
+			var browser = new isg.browser(this);
+		});
 	});
+
 });
