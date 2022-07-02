@@ -27,7 +27,8 @@
                 "InteractiveSemanticGraph.css"
             ],
             "scripts":[
-                "InteractiveSemanticGraph.js"
+                "InteractiveSemanticGraph.js",
+                "InteractiveSemanticGraphBrowser.js"
             ],
             "position":"bottom"
         }
