@@ -2,7 +2,7 @@
 /* 
 DEV: MediaWiki:InteractiveSemanticGraph.js
 REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraph.js
-hint: ResourceLoader minifier does not ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
+hint: ResourceLoader minifier does not support ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
 */
 
 $(document).ready(function() {
@@ -524,6 +524,7 @@ $(document).ready(function() {
                 if (input.hint) this.insertAdjacentHTML('afterbegin', tip);
                 //Ctrl and click on two nodes, puts out all possible paths between the two nodes under the tip
                 network.on("click", function(params) {
+                	mw.hook( 'interactivesemanticgraph.node.clicked' ).fire( params.nodes[0] ); //fire event
                     if (params.nodes[0] && params.event.srcEvent.ctrlKey) {
                         if (nodesClicked.length < 2) {
                             nodesClicked.push(params.nodes[0]);
