@@ -6,11 +6,6 @@ REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraphBrowser.js
 hint: ResourceLoader minifier does not support ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
 */
 
-class isg {
-	constructor() {
-	}
-}
-
 isg.browser = class {
 	constructor(element) {
 		this.debug = true;

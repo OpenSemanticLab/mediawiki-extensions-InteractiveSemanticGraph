@@ -5,7 +5,25 @@ REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraph.js
 hint: ResourceLoader minifier does not support ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
 */
 
+//Root class
+class isg {
+    constructor() {
+
+    }
+    static version = "0.0.1";
+
+    static getVersion() {
+        return this.version;
+    }
+}
+
+// Assigning namespace.
+window.isg = isg;
+
+
 $(document).ready(function() {
+
+
     $.getScript('https://unpkg.com/vis-network/standalone/umd/vis-network.min.js').done(function() {
         var pathId = 0;
         var newNodes = {};
@@ -71,19 +89,11 @@ $(document).ready(function() {
 		        	searchParams = new URLSearchParams(window.location.search);
 		        	read_link(input, nodes, edges, colors, curr_element);
 		        }
-				//Function for random colors
-                var h = Math.random();
-                var golden = 0.618033988749895;
 
-                function randomHSL() {
-                    h += golden;
-                    h %= 1;
-                    return "hsla(" + (360 * h) + "," +
-                        "70%," +
-                        "80%,1)";
-                }
+                randomColor = new isg.util.Color();
+
                 for (var i = 0; i < input.properties.length; i++) {
-                    colors.push(randomHSL());
+                    colors.push(randomColor.randomHSL());
                 }
 
                 function isLabelSet(id) {
@@ -98,32 +108,13 @@ $(document).ready(function() {
                     color: '#6dbfa9'
                 	});
 				}
-                //Creates API query Url with the given root and properties
-                function createUrl(root, properties) {
-                	if (properties[0] === "-Category") properties[0] = "Category";
-                	else if (root.startsWith("Category:")) root = ":" + root; //[[Category:X]] queries pages within this category, [[:Category:X]] the category itself
-                    var url = `/w/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
-                    var propertiesVar = '';
-                    for (var i = 0; i < properties.length; i++) {
-                        propertiesVar += '|?' + encodeURIComponent(properties[i]) + "=" + encodeURIComponent(properties[i]); //explicit label overwrites property display title. ToDo: extrakt label in result and get corresponding printout
-                        propertiesVar += '|?' + encodeURIComponent(properties[i] + ".Display title of") + "=" + encodeURIComponent(properties[i] + ".Display title of"); //explicit query for display title due to slow update of the displaytitle page field 
-                    }
-                    url = url + propertiesVar + '&format=json';
-                    return url;
-                }
-
-                function uuidv4() {
-                    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-                        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-                    );
-                }
 
                 //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
                 //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
                 var first_call = true;
                 function fetchData(root, properties, nodeID, setGroup, setColor) {
                     if (nodes.get(root).isLiteral) return false; //don't query on literals
-                    fetch(createUrl(root, properties))
+                    fetch(isg.util.getSmwQuery(root, properties))
                         .then(response => response.json())
                         .then(data => {
                             if (!nodeID && root) { //first query on root node
@@ -145,7 +136,7 @@ $(document).ready(function() {
                                         colors[i] = legendColors[properties[i]];
                                     }
                                     //define id and label. use displaytitle if available. Use string representation of non-page properties
-                                    var id = uuidv4(); //default: UUID
+                                    var id = isg.util.uuidv4(); //default: UUID
                                     var label = "";
                                     var isLiteral = true;
                                     if (data.query.results[root].printouts[properties[i]][j].fulltext) {
@@ -391,14 +382,7 @@ $(document).ready(function() {
                     var allEdgePaths = getAllCombs(arraysOfEdgesForNodeInPath);
                     return allEdgePaths;
                 }
-				//Given Label is reversed with "-" or "-" is removed
-                function reverseLabel(label) {
-                    if (label[0] == "-") {
-                        return label.substring(1);
-                    } else {
-                        return "-" + label;
-                    }
-                }
+
 				//Gets Path array with nodes, returns all possible edge paths
                 function getEdgeLabelStringsForPath(path) {
                     var allEdgePaths = getEdgePathsForPath(path);
@@ -411,7 +395,7 @@ $(document).ready(function() {
                             var nodeId1 = path[j];
                             var nodeId2 = path[j + 1];
                             if (edge.to == nodeId1 && edge.from == nodeId2) {
-                                label = reverseLabel(label);
+                                label = isg.util.reverseLabel(label);
                             }
                             if (j == (allEdgePaths[i].length - 1)) {
                                 s = s + label;
@@ -433,14 +417,7 @@ $(document).ready(function() {
                     }
                     return arrayOfAllStrings;
                 }
-				//Removes the given value from the given array
-                function removeItem(arr, value) {
-                    var index = arr.indexOf(value);
-                    if (index > -1) {
-                        arr.splice(index, 1);
-                    }
-                    return arr;
-                }
+
 				//Returns all paths between startNode and endNode
                 function findAllPaths(startNode, endNode) {
                     var visitedNodes = [];
@@ -457,7 +434,7 @@ $(document).ready(function() {
                     if (start == end) {
                         var localCurrentPath = currentPath.slice();
                         allPaths.push(localCurrentPath);
-                        removeItem(visitedNodes, start);
+                        isg.util.removeItemFromArray(visitedNodes, start);
                         currentPath.pop();
                         return;
                     }
@@ -467,7 +444,7 @@ $(document).ready(function() {
                         dfs(current, end, currentPath, allPaths, visitedNodes);
                     }
                     currentPath.pop();
-                    removeItem(visitedNodes, start);
+                    isg.util.removeItemFromArray(visitedNodes, start);
                 }
                 //Algorithm that gets all nodes that are reachable from the given node in the graph 
                 function getAllReachableNodesTo(nodeId, excludeIds, reachableNodes) {
@@ -912,7 +889,7 @@ $(document).ready(function() {
 	                        		//On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
                                     $(".custom-menu li").click(function() {
                                         var clickedProperty = [$(this).attr("data-action")]
-                                        var clickedPropertyColor = randomHSL();
+                                        var clickedPropertyColor = randomColor.randomHSL();
                                         if (!(clickedProperty in legendColors)) {
                                             legendColors[clickedProperty] = clickedPropertyColor;
                                         } else {
@@ -1160,7 +1137,7 @@ $(document).ready(function() {
                     if (legendColors[data.label]) {
                         data.color = legendColors[data.label];
                     } else {
-                        data.color = randomHSL();
+                        data.color = randomColor.randomHSL();
                     }
                     if (!toNode.color) {
                         toNode.color = data.color;
@@ -1215,13 +1192,13 @@ $(document).ready(function() {
                             var splitWikiText = await editWikiText(toNode.id);
                             if (editNodes[toNode.id]) {
                                 editNodes[toNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + reverseLabel(data.label) +
+                                    '|property=' + isg.util.reverseLabel(data.label) +
                                     '|value=' + fromNode.id +
                                     '}}' + '';
                             } else {
                                 if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
                                     editNodes[toNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
-                                        '|property=' + reverseLabel(data.label) +
+                                        '|property=' + isg.util.reverseLabel(data.label) +
                                         '|value=' + fromNode.id +
                                         '}}' + '';
                                 } else {
@@ -1230,7 +1207,7 @@ $(document).ready(function() {
                                         '|description=test' +
                                         '|relations=' +
                                         '{{Semantic/Link' +
-                                        '|property=' + reverseLabel(data.label) +
+                                        '|property=' + isg.util.reverseLabel(data.label) +
                                         '|value=' + fromNode.id +
                                         '}}' + '' + splitWikiText[0];
                                 }
@@ -1238,7 +1215,7 @@ $(document).ready(function() {
                         } else {
                             if (newNodes[toNode.id]) {
                                 newNodes[toNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + reverseLabel(data.label) +
+                                    '|property=' + isg.util.reverseLabel(data.label) +
                                     '|value=' + fromNode.id +
                                     '}}' + '';
                             } else {
@@ -1246,7 +1223,7 @@ $(document).ready(function() {
                                     '|label=' + toNode.label +
                                     '|description=test' +
                                     '|relations={{Semantic/Link' +
-                                    '|property=' + reverseLabel(data.label) +
+                                    '|property=' + isg.util.reverseLabel(data.label) +
                                     '|value=' + fromNode.id +
                                     '}}' +
                                     '';
@@ -1513,7 +1490,7 @@ $(document).ready(function() {
                                 .then(response => response.json())
                                 .then(data => {
                                     var wikiText = data.parse.wikitext['*'];
-                                    var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`
+                                    var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + isg.util.reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`
                                     //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
                                     var re = new RegExp(edgeString, "g");
                                     var edgeStringFound = wikiText.search(re) >= 0;
@@ -1539,7 +1516,7 @@ $(document).ready(function() {
                             if (network.getConnectedNodes(edgeToNode).length == 0) {
                                 delete newNodes["" + edgeToNode];
                             } else {
-                                var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
+                                var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + isg.util.reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
                                 var re = new RegExp(edgeString, "g");
                                 var wikiText = newNodes["" + edgeToNode];
                                 var newWikiText = wikiText.replace(re, "");
