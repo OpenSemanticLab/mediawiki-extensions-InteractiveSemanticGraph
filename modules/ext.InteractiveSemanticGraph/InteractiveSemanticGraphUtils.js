@@ -13,7 +13,7 @@ isg.util = class {
     }
 
     //Removes the given value from the given array
-    removeItemFromArray(arr, value) {
+    static removeItemFromArray(arr, value) {
         var index = arr.indexOf(value);
         if (index > -1) {
             arr.splice(index, 1);
@@ -36,11 +36,19 @@ isg.util = class {
     }
 
     //Given Label is reversed with "-" or "-" is removed
-    reverseLabel(label) {
+    static reverseLabel(label) {
         if (label[0] == "-") {
             return label.substring(1);
         } else {
             return "-" + label;
+        }
+    }
+
+    static isLabelReversed(label) {
+        if (label[0] == "-") {
+            return true;
+        } else {
+            return false;
         }
     }
 

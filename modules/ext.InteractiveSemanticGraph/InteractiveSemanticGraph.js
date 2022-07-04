@@ -23,8 +23,15 @@ window.isg = isg;
 
 $(document).ready(function() {
 
-
-    $.getScript('https://unpkg.com/vis-network/standalone/umd/vis-network.min.js').done(function() {
+	$.when(
+        mw.loader.using('ext.mwjson.util'),
+	    mw.loader.using('ext.mwjson.api'),
+        mw.loader.using('ext.mwjson.parser'),
+		$.getScript("//unpkg.com/vis-network/standalone/umd/vis-network.min.js"),
+		$.Deferred(function (deferred) {
+			$(deferred.resolve);
+		})
+	).done(function() {
         var pathId = 0;
         var newNodes = {};
         var editNodes = {};
@@ -1015,7 +1022,7 @@ $(document).ready(function() {
 				//saveNodeData to the graph
                 function saveNodeData(data, callback) {
                     data.label = document.getElementById("node-label").value;
-                    data.id = document.getElementById("node-label").value;
+                    data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-',''); //create an UUID page in the Term namespace
                     data.hidden = false;
                     data.physics = false;
                     document.getElementById("node-label").value = "";
@@ -1062,55 +1069,6 @@ $(document).ready(function() {
                     callback(null);
                 }
 
-                function isLabelReversed(label) {
-                    if (label[0] == "-") {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                var pageBool;
-                //Checks if page exists in the wiki
-                async function pageExists(id) {
-                    await fetch('/w/api.php?action=parse&page=' + id + '&prop=wikitext&format=json')
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.error) {
-                                pageBool = false;
-                            } else {
-                                pageBool = true;
-                            }
-                        })
-                    return pageBool;
-                }
-                var wikiText = "";
-                var semantic = "";
-                //Splits Wikitext and Semantic/Element or Semantic/Link
-                async function editWikiText(node) {
-                    await fetch('/w/api.php?action=parse&page=' + node + '&prop=wikitext&format=json')
-                        .then(response => response.json())
-                        .then(data => {
-                            wikiText = data.parse.wikitext['*'];
-                            semantic = "";
-                            if (wikiText.search(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                //var edgeStringFound = wikiText.search(re) >= 0;
-                                const found = wikiText.match(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\})/g);
-                                var newWikiText = wikiText;
-                                for (var i = 0; i < found.length; i++) {
-                                    if (i == found.length - 1) {
-                                        semantic += found[i];
-                                        newWikiText = newWikiText.replace(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\}[\r\n]*\}[\r\n]*\})/g, "");
-                                        newWikiText = newWikiText.replace(/(\{\{Semantic\/Link[^}]*[\r\n]*\}[\r\n]*\})/g, "");
-                                    } else {
-                                        semantic += found[i];
-                                        newWikiText = newWikiText.replace(found[i], "");
-                                    }
-                                }
-                                wikiText = newWikiText;
-                            }
-                        });
-                    return [semantic, wikiText];
-                }
                 //Save button on create edge popup
                 async function saveEdgeData(data, callback) {
                 	//Sets various options to the nodes that the edge gets connected
@@ -1179,111 +1137,84 @@ $(document).ready(function() {
                         legendColors[data.label] = data.color;
                     }
                     //Creates new wikitext that will be saved after the save button is clicked
-                    if (isLabelReversed(data.label)) {
-                        if (await pageExists(fromNode.id) === false) {
-                            if (!(newNodes[fromNode.id])) {
-                                newNodes[fromNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + fromNode.label +
-                                    '|description=test' +
-                                    '|relations=';
-                            }
-                        }
-                        if (await pageExists(toNode.id) === true) {
-                            var splitWikiText = await editWikiText(toNode.id);
-                            if (editNodes[toNode.id]) {
-                                editNodes[toNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + isg.util.reverseLabel(data.label) +
-                                    '|value=' + fromNode.id +
-                                    '}}' + '';
-                            } else {
-                                if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                    editNodes[toNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
-                                        '|property=' + isg.util.reverseLabel(data.label) +
-                                        '|value=' + fromNode.id +
-                                        '}}' + '';
-                                } else {
-                                    editNodes[toNode.id] = splitWikiText[1] + '{{Semantic/Element' +
-                                        '|label=' + toNode.label +
-                                        '|description=test' +
-                                        '|relations=' +
-                                        '{{Semantic/Link' +
-                                        '|property=' + isg.util.reverseLabel(data.label) +
-                                        '|value=' + fromNode.id +
-                                        '}}' + '' + splitWikiText[0];
-                                }
-                            }
-                        } else {
-                            if (newNodes[toNode.id]) {
-                                newNodes[toNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + isg.util.reverseLabel(data.label) +
-                                    '|value=' + fromNode.id +
-                                    '}}' + '';
-                            } else {
-                                newNodes[toNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + toNode.label +
-                                    '|description=test' +
-                                    '|relations={{Semantic/Link' +
-                                    '|property=' + isg.util.reverseLabel(data.label) +
-                                    '|value=' + fromNode.id +
-                                    '}}' +
-                                    '';
-                            }
-                        }
-                    } else {
-                        if (await pageExists(toNode.id) === false) {
-                            if (!(newNodes[toNode.id])) {
-                                newNodes[toNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + toNode.label +
-                                    '|description=test' +
-                                    '|relations=';
-                            }
-                        }
-                        if (await pageExists(fromNode.id) === true) {
-                            var splitWikiText = await editWikiText(fromNode.id);
-                            if (editNodes[fromNode.id]) {
-                                editNodes[fromNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + data.label +
-                                    '|value=' + toNode.id +
-                                    '}}' + '';
-                            } else {
-                                if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                    editNodes[fromNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
-                                        '|property=' + data.label +
-                                        '|value=' + toNode.id +
-                                        '}}' + '';
-                                } else {
-                                    editNodes[fromNode.id] = splitWikiText[1] + '{{Semantic/Element' +
-                                        '|label=' + fromNode.label +
-                                        '|description=test' +
-                                        '|relations=' +
-                                        '{{Semantic/Link' +
-                                        '|property=' + data.label +
-                                        '|value=' + toNode.id +
-                                        '}}' + '' + splitWikiText[0];
-                                }
-                            }
-                        } else {
-                            if (newNodes[fromNode.id]) {
-                                newNodes[fromNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + data.label +
-                                    '|value=' + toNode.id +
-                                    '}}' + '';
-                            } else {
-                                newNodes[fromNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + fromNode.label +
-                                    '|description=test' +
-                                    '|relations={{Semantic/Link' +
-                                    '|property=' + data.label +
-                                    '|value=' + toNode.id +
-                                    '}}' +
-                                    '';
-                            }
-                        }
+                    var sub = fromNode;
+                    var obj = toNode;
+                    var property = data.label;
+                    if (isg.util.isLabelReversed(data.label)) { //reverseOrder
+                        subject = toNode;
+                        obj = fromNode;
+                        property = reverseLabel(property)
                     }
-                    //console.log(toNode);
-                    //console.log(fromNode);
-                    //console.log(editNodes);
-                    //console.log(newNodes);
+                        var page = await mwjson.api.getPage(obj.id);
+                        if (!page.exists) {
+                            if (!(newNodes[obj.id])) {
+                                page.title = formNode.id;
+                                page.dict = [{
+                                    'OslTemplate:KB/Term': {
+                                    'label': obj.label,
+                                    'label_lang_code': 'en',
+                                    'description': "test",
+                                    'relations': []
+                                    }
+                                }];
+                                newNodes[obj.id] = page;
+                            }
+                        }
+                        page = await mwjson.api.getPage(sub.id);
+                        if (page.exists) {
+                            await mwjson.parser.init();
+                            mwjson.parser.parsePage(page);
+                            if (editNodes[sub.id]) {
+                                page = editNodes[sub.id]; //use stored version
+                            } else {
+
+                                if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
+                                    //there is already a KB/Term Template
+                                } else {
+                                    console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                                    mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
+                                            'label': sub.label,
+                                            'label_lang_code': 'en',
+                                            'description': "test",
+                                            'relations': []
+                                        }
+                                    );
+                                }
+                            }
+
+                            mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                                'OslTemplate:KB/Relation': {
+                                    'property': property,
+                                    'value': obj.id
+                                }
+                            });
+                            editNodes[sub.id] = page; //store page state
+                        } else {
+                            if (!newNodes[sub.id]) {
+                                page.title = sub.id;
+                                page.dict = [{
+                                    'OslTemplate:KB/Term': {
+                                    'label': sub.label,
+                                    'label_lang_code': 'en',
+                                    'description': "test",
+                                    'relations': []
+                                    }
+                                }];
+                            } else {
+                                page = newNodes[sub.id];
+                            }
+                            mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                                'OslTemplate:KB/Relation': {
+                                    'property': property,
+                                    'value': obj.id
+                                }
+                            });
+                            newNodes[sub.id] = page;
+                        }
+                    console.log(sub);
+                    console.log(obj);
+                    console.log(editNodes);
+                    console.log(newNodes);
                     clearEdgePopUp();
                     callback(data);
                     network.setOptions(options);
@@ -1359,32 +1290,24 @@ $(document).ready(function() {
 				//Called on save button click. Creates new wiki pages or edits them with the created wiki text.
                 function saveGraphChanges() {
                     var alertString = "";
-                    OO.ui.confirm('Änderungen übernehmen?').done(async function(confirmed) {
+                    OO.ui.confirm('Submit changes?').done(async function(confirmed) {
                         if (confirmed) {
-                            for (const [key, value] of Object.entries(newNodes)) {
-                                var params = {
-                                        action: 'edit',
-                                        title: '' + key,
-                                        appendtext: '' + value + '}}',
-                                        format: 'json'
-                                    },
-                                    api = new mw.Api();
-                                await api.postWithToken('csrf', params).done(function(data) {
-                                    console.log(data);
-                                    alertString += "Seite " + key + " erstellt!\r\n"
+                            for (const [key, page] of Object.entries(newNodes)) {
+                                mwjson.parser.updateContent(page);
+                                mwjson.api.updatePage(page, "Created with InteractiveSemanticGraph").then((page) => {
+                                    newNodes[key] = page;
+                                    alertString += "Page " + page.title + " created!\r\n"
+                                }, (error) => {
+                                    console.log(error);
                                 });
                             }
-                            for (const [key, value] of Object.entries(editNodes)) {
-                                var params = {
-                                        action: 'edit',
-                                        title: '' + key,
-                                        text: '' + value + '}}',
-                                        format: 'json'
-                                    },
-                                    api = new mw.Api();
-                                await api.postWithToken('csrf', params).done(function(data) {
-                                    console.log(data);
-                                    alertString += "Seite " + key + " bearbeitet!\r\n"
+                            for (const [key, page] of Object.entries(editNodes)) {
+                                mwjson.parser.updateContent(page);
+                                mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph").then((page) => {
+                                    editNodes[key] = page;
+                                    alertString += "Page " + key + " edited!\r\n"
+                                }, (error) => {
+                                    console.log(error);
                                 });
                             }
                             for (const [key, value] of Object.entries(editDeletedEdges)) {
@@ -1484,85 +1407,34 @@ $(document).ready(function() {
                             i--;
                         }
                     }
+                    var sub = edgeFromNode;
+                    var obj = edgeToNode;
+                    var property = edgeLabel[0];
                     if (edgeLabel[0] == "-") {
-                        if (await pageExists(edgeToNode) === true) {
-                            await fetch('/w/api.php?action=parse&page=' + edgeToNode + '&prop=wikitext&format=json')
-                                .then(response => response.json())
-                                .then(data => {
-                                    var wikiText = data.parse.wikitext['*'];
-                                    var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + isg.util.reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`
-                                    //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
-                                    var re = new RegExp(edgeString, "g");
-                                    var edgeStringFound = wikiText.search(re) >= 0;
-                                    if (edgeStringFound) {
-                                        if (editDeletedEdges["" + edgeToNode]) {
-                                            var newWikiText = editDeletedEdges["" + edgeToNode].replace(re, "");
-                                            editDeletedEdges["" + edgeToNode] = newWikiText;
-                                        } else {
-                                            var newWikiText = wikiText.replace(re, "");
-                                            editDeletedEdges["" + edgeToNode] = newWikiText;
-                                        }
-                                    }
-                                    if (newNodes["" + edgeToNode]) {
-                                        var newWikiText = newNodes["" + edgeToNode].replace(re, "");
-                                        newNodes["" + edgeToNode] = newWikiText;
-                                    }
-                                    if (editNodes["" + edgeToNode]) {
-                                        var newWikiText = editNodes["" + edgeToNode].replace(re, "");
-                                        editNodes["" + edgeToNode] = newWikiText;
-                                    }
-                                });
-                        } else {
-                            if (network.getConnectedNodes(edgeToNode).length == 0) {
-                                delete newNodes["" + edgeToNode];
-                            } else {
-                                var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + isg.util.reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
-                                var re = new RegExp(edgeString, "g");
-                                var wikiText = newNodes["" + edgeToNode];
-                                var newWikiText = wikiText.replace(re, "");
-                                newNodes["" + edgeToNode] = newWikiText;
-                            }
-                        }
+                        sub = edgeToNode;
+                        obj = edgeFromNode;
+                        property = isg.util.reverseLabel(property)
+                    } 
+                    var page = {};
+                    if (newNodes[sub]) page = newNodes[sub];
+                    else if (editNodes[sub]) page = editNodes[sub];
+                    else page = await mwjson.api.getPage(sub);
+                    await mwjson.parser.init();
+                    if (page.exists) {
+                        console.log(page);
+                        mwjson.parser.parsePage(page);
+                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], {'property': edgeLabel, 'value': obj}, {}); //delete relation
+                        console.log(page);
+                        editNodes[sub] = page;
                     } else {
-                        if (await pageExists(edgeFromNode) === true) {
-                            await fetch('/w/api.php?action=parse&page=' + edgeFromNode + '&prop=wikitext&format=json')
-                                .then(response => response.json())
-                                .then(data => {
-                                    var wikiText = data.parse.wikitext['*'];
-                                    var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + edgeLabel + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeToNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
-                                    //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
-                                    var re = new RegExp(edgeString, "g");
-                                    var edgeStringFound = wikiText.search(re) >= 0;
-                                    if (edgeStringFound) {
-                                        if (editDeletedEdges["" + edgeFromNode]) {
-                                            var newWikiText = editDeletedEdges["" + edgeFromNode].replace(re, "");
-                                            editDeletedEdges["" + edgeFromNode] = newWikiText;
-                                        } else {
-                                            var newWikiText = wikiText.replace(re, "");
-                                            editDeletedEdges["" + edgeFromNode] = newWikiText;
-                                        }
-                                    }
-                                    if (newNodes["" + edgeFromNode]) {
-                                        var newWikiText = newNodes["" + edgeFromNode].replace(re, "");
-                                        newNodes["" + edgeFromNode] = newWikiText;
-                                    }
-                                    if (editNodes["" + edgeFromNode]) {
-                                        var newWikiText = editNodes["" + edgeFromNode].replace(re, "");
-                                        editNodes["" + edgeFromNode] = newWikiText;
-                                    }
-                                });
+                        if (network.getConnectedNodes(sub).length == 0) {
+                            delete newNodes[sub];
                         } else {
-                            if (network.getConnectedNodes(edgeFromNode).length == 0) {
-                                delete newNodes["" + edgeFromNode];
-                            } else {
-                                var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + edgeLabel + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeToNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
-                                var re = new RegExp(edgeString, "g");
-                                var wikiText = newNodes["" + edgeFromNode];
-                                var newWikiText = wikiText.replace(re, "");
-                                newNodes["" + edgeFromNode] = newWikiText;
-                            }
+                            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], {'property': edgeLabel, 'value': obj}, {}); //delete relation
+                            newNodes[sub] = page;
                         }
                     }
+                    
                     //nodes.remove(edges.get(data.edges[0]).to);
                     callback(data);
                     document.querySelector('.vis-delete').remove();

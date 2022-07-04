@@ -12,7 +12,10 @@
     "license-name":"AGPL-3.0-or-later",
     "type":"editor",
     "requires":{
-        "MediaWiki":">= 1.31"
+        "MediaWiki":">= 1.31",
+        "extensions": {
+			"MwJson": "*"
+		}
     },
     "MessagesDirs":{
         "InteractiveSemanticGraph":[
