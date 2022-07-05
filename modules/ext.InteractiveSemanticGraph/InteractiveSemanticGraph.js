@@ -76,6 +76,7 @@ $(document).ready(function() {
             	}
                 var input = {...defaultOptions, ...userOptions};
             	input.depth = parseInt(input.depth);
+                if (input.edit) mwjson.parser.init(); //start loading parser
                 // create an array with nodes
                 var nodes = new vis.DataSet([]);
                 // create an array with edges
@@ -1141,22 +1142,24 @@ $(document).ready(function() {
                     var obj = toNode;
                     var property = data.label;
                     if (isg.util.isLabelReversed(data.label)) { //reverseOrder
-                        subject = toNode;
+                        sub = toNode;
                         obj = fromNode;
                         property = reverseLabel(property)
                     }
                         var page = await mwjson.api.getPage(obj.id);
                         if (!page.exists) {
                             if (!(newNodes[obj.id])) {
-                                page.title = formNode.id;
+                                page.title = obj.id;
                                 page.dict = [{
                                     'OslTemplate:KB/Term': {
-                                    'label': obj.label,
-                                    'label_lang_code': 'en',
-                                    'description': "test",
-                                    'relations': []
-                                    }
-                                }];
+                                        'label': obj.label,
+                                        'label_lang_code': 'en',
+                                        'description': "",
+                                        'relations': []
+                                    }}
+                                    ,"\n=Details=\n\n",
+                                    {'OslTemplate:KB/Term/Footer': {}}
+                                ];
                                 newNodes[obj.id] = page;
                             }
                         }
@@ -1175,7 +1178,7 @@ $(document).ready(function() {
                                     mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
                                             'label': sub.label,
                                             'label_lang_code': 'en',
-                                            'description': "test",
+                                            'description': "",
                                             'relations': []
                                         }
                                     );
@@ -1194,12 +1197,14 @@ $(document).ready(function() {
                                 page.title = sub.id;
                                 page.dict = [{
                                     'OslTemplate:KB/Term': {
-                                    'label': sub.label,
-                                    'label_lang_code': 'en',
-                                    'description': "test",
-                                    'relations': []
-                                    }
-                                }];
+                                        'label': sub.label,
+                                        'label_lang_code': 'en',
+                                        'description': "",
+                                        'relations': []
+                                    }},
+                                    "\n=Details=\n\n",
+                                    {'OslTemplate:KB/Term/Footer': {}}
+                                ];
                             } else {
                                 page = newNodes[sub.id];
                             }
@@ -1211,10 +1216,10 @@ $(document).ready(function() {
                             });
                             newNodes[sub.id] = page;
                         }
-                    console.log(sub);
-                    console.log(obj);
-                    console.log(editNodes);
-                    console.log(newNodes);
+                    //console.log(sub);
+                    //console.log(obj);
+                    //console.log(editNodes);
+                    //console.log(newNodes);
                     clearEdgePopUp();
                     callback(data);
                     network.setOptions(options);
@@ -1310,7 +1315,8 @@ $(document).ready(function() {
                                     console.log(error);
                                 });
                             }
-                            for (const [key, value] of Object.entries(editDeletedEdges)) {
+                            //edges are edit on the subject page
+                            /*for (const [key, value] of Object.entries(editDeletedEdges)) {
                                 var params = {
                                         action: 'edit',
                                         title: '' + key,
@@ -1322,7 +1328,7 @@ $(document).ready(function() {
                                     console.log(data);
                                     alertString += "Auf der Seite " + key + " wurde ein Attribut gelöscht!\r\n"
                                 });
-                            }
+                            }*/
                             for (const [key, value] of Object.entries(editDeletedNodes)) {
                                 var params = {
                                         action: 'delete',
@@ -1335,7 +1341,7 @@ $(document).ready(function() {
                                     alertString += "Seite " + key + " wurde gelöscht!\r\n"
                                 });
                             }
-                            // Example: Customize the displayed actions at the time the window is opened.
+                            /*// Example: Customize the displayed actions at the time the window is opened.
                             var messageDialog = new OO.ui.MessageDialog();
                             // Create and append a window manager.
                             var windowManager = new OO.ui.WindowManager();
@@ -1352,10 +1358,15 @@ $(document).ready(function() {
                                     label: 'Okay',
                                     flags: 'primary'
                                 }]
-                            });
+                            });*/
                             /*OO.ui.alert( "" + alertString ).done( function () {
                                 console.log( alertString );
                             } );*/
+                            //cleanup
+                            newNodes = {};
+                            editNodes = {};
+                            editDeletedNodes = {};
+
                         } else {}
                     });
                     create_link();
@@ -1421,10 +1432,8 @@ $(document).ready(function() {
                     else page = await mwjson.api.getPage(sub);
                     await mwjson.parser.init();
                     if (page.exists) {
-                        console.log(page);
                         mwjson.parser.parsePage(page);
                         mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], {'property': edgeLabel, 'value': obj}, {}); //delete relation
-                        console.log(page);
                         editNodes[sub] = page;
                     } else {
                         if (network.getConnectedNodes(sub).length == 0) {
