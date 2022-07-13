@@ -21,17 +21,17 @@ class isg {
 window.isg = isg;
 
 
-$(document).ready(function() {
+$(document).ready(function () {
 
-	$.when(
+    $.when(
         mw.loader.using('ext.mwjson.util'),
-	    mw.loader.using('ext.mwjson.api'),
+        mw.loader.using('ext.mwjson.api'),
         mw.loader.using('ext.mwjson.parser'),
-		$.getScript("//unpkg.com/vis-network/standalone/umd/vis-network.min.js"),
-		$.Deferred(function (deferred) {
-			$(deferred.resolve);
-		})
-	).done(function() {
+        $.getScript("//unpkg.com/vis-network/standalone/umd/vis-network.min.js"),
+        $.Deferred(function (deferred) {
+            $(deferred.resolve);
+        })
+    ).done(function () {
         var pathId = 0;
         var newNodes = {};
         var editNodes = {};
@@ -39,43 +39,43 @@ $(document).ready(function() {
         var editDeletedNodes = {};
         var param_nodes_set = false;
         //Draws graph from url
-        function read_link(input, nodes, edges, colors, element){
-        	param_nodes_set = true;
-        	
-        	var d_nodes = JSON.parse(atob(searchParams.get("nodes")));
-        	var d_edges = JSON.parse(atob(searchParams.get("edges")));
-        	
-        	input.root = d_nodes[0].id;
-        	var prop_array = [];
-        	for(var i = 0; i < d_nodes.length;i++ ){
-        		nodes.add(d_nodes[i]);
-        		if(prop_array.includes(d_nodes[i].group) || d_nodes[i].id == input.root){
-        			continue;
-        			
-        		}else{
-        			prop_array.push(d_nodes[i].group);
-        			colors.push(d_nodes[i].color);
-        		}
-        	}
-        	input.properties = prop_array;
-        	for(var i = 0; i < d_edges.length;i++ ){
-        		edges.add(d_edges[i]);
-        	}
-        	
-			searchParams = new URLSearchParams(window.location.search);
-			//console.log(JSON.parse(atob(searchParams.get("nodes"))));
-			//console.log(JSON.parse(atob(searchParams.get("edges"))));
-                	
+        function read_link(input, nodes, edges, colors, element) {
+            param_nodes_set = true;
+
+            var d_nodes = JSON.parse(atob(searchParams.get("nodes")));
+            var d_edges = JSON.parse(atob(searchParams.get("edges")));
+
+            input.root = d_nodes[0].id;
+            var prop_array = [];
+            for (var i = 0; i < d_nodes.length; i++) {
+                nodes.add(d_nodes[i]);
+                if (prop_array.includes(d_nodes[i].group) || d_nodes[i].id == input.root) {
+                    continue;
+
+                } else {
+                    prop_array.push(d_nodes[i].group);
+                    colors.push(d_nodes[i].color);
+                }
+            }
+            input.properties = prop_array;
+            for (var i = 0; i < d_edges.length; i++) {
+                edges.add(d_edges[i]);
+            }
+
+            searchParams = new URLSearchParams(window.location.search);
+            //console.log(JSON.parse(atob(searchParams.get("nodes"))));
+            //console.log(JSON.parse(atob(searchParams.get("edges"))));
+
         }
-        $(".InteractiveSemanticGraph").each( function(index) {
+        $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-            	var defaultOptions = { "root":"", "properties":[], "permalink":false, "edit":false, "hint":false };
+                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false };
                 var userOptions = {};
-            	if(this.innerHTML !== "") {//ToDo: use data attributes
-            		var userOptions = JSON.parse(this.innerHTML);	
-            	}
-                var input = {...defaultOptions, ...userOptions};
-            	input.depth = parseInt(input.depth);
+                if (this.innerHTML !== "") {//ToDo: use data attributes
+                    var userOptions = JSON.parse(this.innerHTML);
+                }
+                var input = { ...defaultOptions, ...userOptions };
+                input.depth = parseInt(input.depth);
                 if (input.edit) mwjson.parser.init(); //start loading parser
                 // create an array with nodes
                 var nodes = new vis.DataSet([]);
@@ -89,14 +89,15 @@ $(document).ready(function() {
                 givenDiv.style.display = "inline-block";
                 var curr_element = this.innerHTML;
 
-		        searchParams = new URLSearchParams(window.location.search);
-		        if((searchParams.has('nodes') &&  !(searchParams.get('nodes') === "")) || input.data){
-		        	if(input.data){
-		        	input.data = input.data.replaceAll("&amp;", "&");
-		        	window.history.replaceState(null, document.title, input.data);}
-		        	searchParams = new URLSearchParams(window.location.search);
-		        	read_link(input, nodes, edges, colors, curr_element);
-		        }
+                searchParams = new URLSearchParams(window.location.search);
+                if ((searchParams.has('nodes') && !(searchParams.get('nodes') === "")) || input.data) {
+                    if (input.data) {
+                        input.data = input.data.replaceAll("&amp;", "&");
+                        window.history.replaceState(null, document.title, input.data);
+                    }
+                    searchParams = new URLSearchParams(window.location.search);
+                    read_link(input, nodes, edges, colors, curr_element);
+                }
 
                 randomColor = new isg.util.Color();
 
@@ -109,13 +110,13 @@ $(document).ready(function() {
                     if (node === null) return false;
                     else return id;
                 }
-				if(param_nodes_set === false){
-                	nodes.add({
-                    id: input.root,
-                    label: input.root, //todo: query display title
-                    color: '#6dbfa9'
-                	});
-				}
+                if (param_nodes_set === false) {
+                    nodes.add({
+                        id: input.root,
+                        label: input.root, //todo: query display title
+                        color: '#6dbfa9'
+                    });
+                }
 
                 //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
                 //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
@@ -155,7 +156,7 @@ $(document).ready(function() {
                                         else label = data.query.results[root].printouts[properties[i]][j].fulltext; //treat non existing pages as literals
                                     }
                                     else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
-                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp*1000).toISOString(); //datetime
+                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp * 1000).toISOString(); //datetime
                                     else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
                                     if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
                                     if (data.query.results[root].printouts[properties[i] + ".Display title of"][j]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j]; //explicit use property display title due to slow update of the displaytitle page field
@@ -163,8 +164,8 @@ $(document).ready(function() {
                                     var color = colors[i];
                                     if (isLiteral) color = setColor = "#FFFFFF";
                                     var shape = image = undefined;
-                                    if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif")) ) {
-                                        image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:","")}&width=200&height=200`;
+                                    if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif"))) {
+                                        image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:", "")}&width=200&height=200`;
                                         shape = "image";
                                         label = "";
                                     }
@@ -229,17 +230,18 @@ $(document).ready(function() {
                             network.body.emitter.emit('_dataChanged');
                             network.redraw();
                             create_link();
-                            if(first_call && input.depth){
-                            	var first_nodes = nodes.getIds()
-                            	first_nodes = first_nodes.slice(1);
-                            	getStartIds(first_nodes); 
-                            	first_call = false;
+                            if (first_call && input.depth) {
+                                var first_nodes = nodes.getIds()
+                                first_nodes = first_nodes.slice(1);
+                                getStartIds(first_nodes);
+                                first_call = false;
                             }
                             return true;
                         });
                 }
-                if(param_nodes_set === false){
-                fetchData(input.root, input.properties);}
+                if (param_nodes_set === false) {
+                    fetchData(input.root, input.properties);
+                }
                 // create a network
                 var container = this; //document.getElementById("InteractiveSemanticGraph");
                 var data = {
@@ -255,19 +257,19 @@ $(document).ready(function() {
                     manipulation: {
                         enabled: input.edit,
                         editEdge: false,
-                        deleteNode: function(data, callback) {
+                        deleteNode: function (data, callback) {
                             deleteSelectedNode(data, callback)
                         }.bind(this),
-                        deleteEdge: function(data, callback) {
+                        deleteEdge: function (data, callback) {
                             deleteSelectedEdge(data, callback)
                         }.bind(this),
-                        addNode: function(data, callback) {
+                        addNode: function (data, callback) {
                             // filling in the popup DOM elements
                             document.getElementById("node-operation").innerText = "Add Node";
                             dragElement(document.getElementById("node-popUp"));
                             editNode(data, clearNodePopUp, callback);
                         },
-                        addEdge: function(data, callback) {
+                        addEdge: function (data, callback) {
                             if (data.from == data.to) {
                                 var r = confirm("Do you want to connect the node to itself?");
                                 if (r != true) {
@@ -314,84 +316,84 @@ $(document).ready(function() {
                 }
                 var network = new vis.Network(container, data, options);
                 var nodes_opened = [];
-                
+
                 /*function isFetched(node){
-                	return new Promise( function(resolve){
-                					setTimeout(() => {
-											          fetchData(node, input.properties, node);console.log(nodes.getIds());
-											          }, 2000)
-                					//console.log(node);
-									resolve(true);
+                    return new Promise( function(resolve){
+                                    setTimeout(() => {
+                                                      fetchData(node, input.properties, node);console.log(nodes.getIds());
+                                                      }, 2000)
+                                    //console.log(node);
+                                    resolve(true);
                 });}*/
-                
+
                 nodes_opened.push(input.root);
                 var loop_counter = 0;
-                async function getStartIds(node){
-                	
-                	//console.log(node);
-                		var start_nodes = node;//network.getConnectedNodes(node);
-                		//console.log(start_nodes)
-                	//nodes_opened.push(start_nodes);
-                	for(var i = 0; i < start_nodes.length; i++){
-                		if(nodes_opened.includes(start_nodes[i])){/*console.log(start_nodes[i]);*/ continue;}
-                		nodes_opened.push(start_nodes[i]);
-                		/*await isFetched(start_nodes[i]).then(function(response){
-                			console.log(response);
-                		});*/
-                		fetchData(start_nodes[i], input.properties, start_nodes[i]);
-                		//console.log(fetched);
-                		
-                	}
-                	//console.log(nodes_opened);
-                	setTimeout(() => {
-                				if(loop_counter == input.depth-1)return;
-                				loop_counter++;
-					          var new_nodes_loop = nodes.getIds();
-					          //console.log(new_nodes_loop);
-					          getStartIds(new_nodes_loop);
-					          }, 300)
+                async function getStartIds(node) {
 
-                	//getStartIds(nodes.getIds());
-                	//console.log(nodes.getIds());
-                	//getStartIds(start_nodes[1]);
-                	
+                    //console.log(node);
+                    var start_nodes = node;//network.getConnectedNodes(node);
+                    //console.log(start_nodes)
+                    //nodes_opened.push(start_nodes);
+                    for (var i = 0; i < start_nodes.length; i++) {
+                        if (nodes_opened.includes(start_nodes[i])) {/*console.log(start_nodes[i]);*/ continue; }
+                        nodes_opened.push(start_nodes[i]);
+                        /*await isFetched(start_nodes[i]).then(function(response){
+                            console.log(response);
+                        });*/
+                        fetchData(start_nodes[i], input.properties, start_nodes[i]);
+                        //console.log(fetched);
+
+                    }
+                    //console.log(nodes_opened);
+                    setTimeout(() => {
+                        if (loop_counter == input.depth - 1) return;
+                        loop_counter++;
+                        var new_nodes_loop = nodes.getIds();
+                        //console.log(new_nodes_loop);
+                        getStartIds(new_nodes_loop);
+                    }, 300)
+
+                    //getStartIds(nodes.getIds());
+                    //console.log(nodes.getIds());
+                    //getStartIds(start_nodes[1]);
+
                 }
-				//The function getAllEdgesBetween() returns all edges between two nodes
+                //The function getAllEdgesBetween() returns all edges between two nodes
                 function getAllEdgesBetween(node1, node2) {
-                    return edges.get().filter(function(edge) {
+                    return edges.get().filter(function (edge) {
                         return (edge.from === node1 && edge.to === node2) || (edge.from === node2 && edge.to === node1);
                     });
                 }
-                
+
                 //Cartesian Product of arrays
                 function cartesianProduct(arr) {
-				    return arr.reduce(function(a,b){
-				        return a.map(function(x){
-				            return b.map(function(y){
-				                return x.concat([y]);
-				            })
-				        }).reduce(function(a,b){ return a.concat(b) },[])
-				    }, [[]])
-				}
-				//Cartesian Product of given arrays
+                    return arr.reduce(function (a, b) {
+                        return a.map(function (x) {
+                            return b.map(function (y) {
+                                return x.concat([y]);
+                            })
+                        }).reduce(function (a, b) { return a.concat(b) }, [])
+                    }, [[]])
+                }
+                //Cartesian Product of given arrays
                 function getAllCombs(arrays) {
-                	var allCombs = cartesianProduct(arrays);
+                    var allCombs = cartesianProduct(arrays);
                     return allCombs;
                 }
-				//Gets Path array with nodes, returns Cartesian Product  of edges
+                //Gets Path array with nodes, returns Cartesian Product  of edges
                 function getEdgePathsForPath(path) {
                     var arraysOfEdgesForNodeInPath = [];
                     for (var i = 1; i < path.length; i++) {
                         var edgesBetween = getAllEdgesBetween(path[i - 1], path[i]);
                         var localedgesBetween = edgesBetween.slice();
-                        
+
                         arraysOfEdgesForNodeInPath.push(localedgesBetween);
                     }
                     var allEdgePaths = getAllCombs(arraysOfEdgesForNodeInPath);
                     return allEdgePaths;
                 }
 
-				//Gets Path array with nodes, returns all possible edge paths
+                //Gets Path array with nodes, returns all possible edge paths
                 function getEdgeLabelStringsForPath(path) {
                     var allEdgePaths = getEdgePathsForPath(path);
                     var allStrings = new Array(allEdgePaths.length);
@@ -415,7 +417,7 @@ $(document).ready(function() {
                     }
                     return allStrings;
                 }
-				//Gets Path arrays with nodes, returns all possible edge paths
+                //Gets Path arrays with nodes, returns all possible edge paths
                 function getAllStringsForAllPaths(paths) {
                     var arrayOfAllStrings = [];
                     for (var i = 0; i < paths.length; i++) {
@@ -426,7 +428,7 @@ $(document).ready(function() {
                     return arrayOfAllStrings;
                 }
 
-				//Returns all paths between startNode and endNode
+                //Returns all paths between startNode and endNode
                 function findAllPaths(startNode, endNode) {
                     var visitedNodes = [];
                     var currentPath = [];
@@ -434,7 +436,7 @@ $(document).ready(function() {
                     dfs(startNode, endNode, currentPath, allPaths, visitedNodes);
                     return allPaths;
                 }
-				//Algorithm to search for all paths between two nodes
+                //Algorithm to search for all paths between two nodes
                 function dfs(start, end, currentPath, allPaths, visitedNodes) {
                     if (visitedNodes.includes(start)) return;
                     visitedNodes.push(start);
@@ -467,7 +469,7 @@ $(document).ready(function() {
                         //reachableNodes.push(children[i]);
                     }
                 }
-				//This function deletes all children of a given node.
+                //This function deletes all children of a given node.
                 function deleteNodesChildren(nodeId, deleteEdge) {
                     var excludedIds = [];
                     if (deleteEdge === true) {
@@ -493,10 +495,10 @@ $(document).ready(function() {
                     }
                     return nodesToDelete;
                 }
-				//Deletes all edges from given node
+                //Deletes all edges from given node
                 function deleteEdges(nodeID) {
                     var fromEdges = edges.get({
-                        filter: function(item) {
+                        filter: function (item) {
                             return item.from == nodeID;
                         }
                     });
@@ -508,8 +510,8 @@ $(document).ready(function() {
                 var tip = '<p><strong>Hinweis:</strong> Um sich einen Pfad zwischen zwei Knoten ausgeben zu lassen, <em>Strg</em> gedrückt halten und die gewünschten zwei Knoten mit der <em>linken Maustaste</em> anklicken. </p>'
                 if (input.hint) this.insertAdjacentHTML('afterbegin', tip);
                 //Ctrl and click on two nodes, puts out all possible paths between the two nodes under the tip
-                network.on("click", function(params) {
-                	mw.hook( 'isg.node.clicked' ).fire( nodes.get(params.nodes[0]) ); //fire event
+                network.on("click", function (params) {
+                    mw.hook('isg.node.clicked').fire(nodes.get(params.nodes[0])); //fire event
                     if (params.nodes[0] && params.event.srcEvent.ctrlKey) {
                         if (nodesClicked.length < 2) {
                             nodesClicked.push(params.nodes[0]);
@@ -564,16 +566,16 @@ $(document).ready(function() {
                     }
                     pathId++;
                 });
-                $(document).keyup(function(event) {
+                $(document).keyup(function (event) {
                     if (!event.ctrlKey) {
                         nodesClicked = [];
                     }
                 });
                 var contextCreatedProps = [];
-                
-                network.on("doubleClick", function(params) {
+
+                network.on("doubleClick", function (params) {
                     if (params.nodes[0]) {
-                    	//Checks if all node children are created from context menu or manually, if so it creates nodes for before defined properties else it deletes all children
+                        //Checks if all node children are created from context menu or manually, if so it creates nodes for before defined properties else it deletes all children
                         var conManNodes = network.getConnectedNodes(params.nodes[0], 'to');
                         var onlyConManNodes = true;
                         for (var i = 0; i < conManNodes.length; i++) {
@@ -629,11 +631,11 @@ $(document).ready(function() {
                     node.hidden = true;
                     var connectedEdgesIds = network.getConnectedEdges(nodeId);
                     var connectedEdges = edges.get(connectedEdgesIds);
-                    connectedEdges.forEach(function(edge) {
+                    connectedEdges.forEach(function (edge) {
                         if (edge.hidden) return; //don't follow hidden edges
                         var connectedNodesIds = network.getConnectedNodes(edge.id);
                         var connectedNodes = nodes.get(connectedNodesIds);
-                        connectedNodes.forEach(function(connectedNode) {
+                        connectedNodes.forEach(function (connectedNode) {
                             if (connectedNode.id == nodeId) return; //prevent self evaluation
                             if (setNodeVisibilityByVisiblePath(connectedNode.id, rootNodeId)) {
                                 node.hidden = false; //set node visible, if at least one connected node is visible
@@ -656,21 +658,21 @@ $(document).ready(function() {
                         if (options.groups[legendGroup].hidden) this.parentNode.childNodes[1].style.background = '#FFFFFF';
                         else this.parentNode.childNodes[1].style.background = '#DEF';
                         //update all edges
-                        edges.forEach(function(edge) {
+                        edges.forEach(function (edge) {
                             edge.hidden = options.groups[edge.label].hidden;
                             edge.physics = !edge.hidden;
                         });
                         //reset nodes
-                        nodes.forEach(function(node) {
+                        nodes.forEach(function (node) {
                             node.hidden = false;
                             node.physics = !node.hidden;
                             node.visited = false;
                         });
                         //check each node
-                        nodes.forEach(function(node) {
+                        nodes.forEach(function (node) {
                             setNodeVisibilityByVisiblePath(node.id, input.root)
                             //reset visited state. Todo: Reuse visited nodes between runs
-                            nodes.forEach(function(node) {
+                            nodes.forEach(function (node) {
                                 node.visited = false;
                             });
                         });
@@ -678,7 +680,7 @@ $(document).ready(function() {
                     network.setOptions(options);
                     network.body.emitter.emit('_dataChanged');
                     network.redraw();
-                    var allFalse = Object.keys(options.groups).every(function(k) {
+                    var allFalse = Object.keys(options.groups).every(function (k) {
                         if (k === 'useDefaultGroups') {
                             return true
                         }
@@ -730,7 +732,7 @@ $(document).ready(function() {
                 objColors = {};
                 var start = 0;
                 //On a node right click it puts out all properties of the clicked node and a link to the node wiki-page
-                network.on("oncontext", function(params) {
+                network.on("oncontext", function (params) {
                     params.event.preventDefault();
                     var timeNow = Date.now();
                     var timeDiff = timeNow - start
@@ -738,27 +740,27 @@ $(document).ready(function() {
                         start = Date.now();
                         console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
                         //console.log(edges.get(network.getEdgeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
-                        $('.custom-menu').each(function(index) {
+                        $('.custom-menu').each(function (index) {
                             while (this.lastElementChild) {
                                 this.removeChild(this.lastElementChild);
                             }
                         });
                         if (!(network.getEdgeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            }) && network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            }))) {
+                            x: params.pointer.DOM.x,
+                            y: params.pointer.DOM.y
+                        }) && network.getNodeAt({
+                            x: params.pointer.DOM.x,
+                            y: params.pointer.DOM.y
+                        }))) {
                             if (edges.get(network.getEdgeAt({
-                                    x: params.pointer.DOM.x,
-                                    y: params.pointer.DOM.y
-                                })).from) {
+                                x: params.pointer.DOM.x,
+                                y: params.pointer.DOM.y
+                            })).from) {
                                 params.event.preventDefault();
                                 if (edges.get(network.getEdgeAt({
-                                        x: params.pointer.DOM.x,
-                                        y: params.pointer.DOM.y
-                                    })).label == 'Category') {
+                                    x: params.pointer.DOM.x,
+                                    y: params.pointer.DOM.y
+                                })).label == 'Category') {
                                     var li = document.createElement("li");
                                     li.innerHTML = '' + '\uD83D\uDD17' + ' ' + edges.get(network.getEdgeAt({
                                         x: params.pointer.DOM.x,
@@ -793,9 +795,9 @@ $(document).ready(function() {
                             }
                         }
                         if (network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            })) {
+                            x: params.pointer.DOM.x,
+                            y: params.pointer.DOM.y
+                        })) {
                             params.event.preventDefault();
                             const nodeID = nodes.get(network.getNodeAt({
                                 x: params.pointer.DOM.x,
@@ -808,12 +810,12 @@ $(document).ready(function() {
                             }
                             var namespace_id = 0;
                             if (subject.split(":")[1]) {
-                            	const namespace = subject.split(":")[0];
-                            	subject = subject.split(":")[1];
-                            	namespace_id = mw.config.get('wgNamespaceIds')[namespace.replaceAll(" ","_").toLowerCase()];
-                            	//console.log(`Namespace ${namespace}, ID ${namespace_id}`);
+                                const namespace = subject.split(":")[0];
+                                subject = subject.split(":")[1];
+                                namespace_id = mw.config.get('wgNamespaceIds')[namespace.replaceAll(" ", "_").toLowerCase()];
+                                //console.log(`Namespace ${namespace}, ID ${namespace_id}`);
                             }
-                            
+
                             //inverse properties are only available in html format
                             const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":${namespace_id}, "type":"html"}&format=json`;
                             fetch(query)
@@ -833,7 +835,7 @@ $(document).ready(function() {
                                     }
                                     var page_properties = [];
                                     $html = $(data.query);
-                                    $html.find("div.smwb-propvalue").each(function() {
+                                    $html.find("div.smwb-propvalue").each(function () {
                                         $prop = $(this).find("div.smwb-prophead a");
                                         //var propName = $prop.text();
                                         //var propName = $prop.attr('title').replace("Property:", "");
@@ -844,13 +846,13 @@ $(document).ready(function() {
                                         else return; //empty property
                                         page_properties.push(propName);
                                         //console.log(propName);
-                                        $(this).find("div.smwb-propval span.smwb-value").each(function() {
+                                        $(this).find("div.smwb-propval span.smwb-value").each(function () {
                                             var value = $(this).find("a").attr("title");
                                             //console.log("-> " + value);
                                         });
                                         create_link();
                                     })
-                                    $html.find("div.smwb-ipropvalue").each(function() {
+                                    $html.find("div.smwb-ipropvalue").each(function () {
                                         $prop = $(this).find("div.smwb-prophead a");
                                         //var propName = $prop.text();
                                         //var propName = $prop.attr('title').replace("Property:", "");
@@ -861,7 +863,7 @@ $(document).ready(function() {
                                         else return; //empty property
                                         page_properties.push(propName);
                                         //console.log(propName);
-                                        $(this).find("div.smwb-propval span.smwb-ivalue").each(function() {
+                                        $(this).find("div.smwb-propval span.smwb-ivalue").each(function () {
                                             var value = $(this).find("a").attr("title");
                                             //console.log("-> " + value);
                                         });
@@ -877,25 +879,25 @@ $(document).ready(function() {
                                     }
                                     /* old: use json result */
                                     /*
-                        	var page_properties = data.query.data; //normal page
-                        	if (selected_node.id.includes('#')) { //subobject
-                        		for (var i = 0; i < data.query.sobj.length; i++) { 
-                        			if (data.query.sobj[i].subject.endsWith(selected_node.id.split('#').pop().replace(' ',''))){
-                        				page_properties = data.query.sobj[i].data
-                        				break;
-                        			}
-                        		}
-                        	}
-	                        for (var i = 0; i < page_properties.length; i++) {
-	                            if (!page_properties[i].property.startsWith("_")) {
-	                                 var li = document.createElement("li");
-	                                 li.dataset.action = page_properties[i].property.replaceAll('_',' ');
-	                                 li.innerHTML = page_properties[i].property.replaceAll('_',' ');
-	                                 ul.append(li);
-	                            }
-	                        }*/
-	                        		//On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
-                                    $(".custom-menu li").click(function() {
+                            var page_properties = data.query.data; //normal page
+                            if (selected_node.id.includes('#')) { //subobject
+                                for (var i = 0; i < data.query.sobj.length; i++) { 
+                                    if (data.query.sobj[i].subject.endsWith(selected_node.id.split('#').pop().replace(' ',''))){
+                                        page_properties = data.query.sobj[i].data
+                                        break;
+                                    }
+                                }
+                            }
+                            for (var i = 0; i < page_properties.length; i++) {
+                                if (!page_properties[i].property.startsWith("_")) {
+                                     var li = document.createElement("li");
+                                     li.dataset.action = page_properties[i].property.replaceAll('_',' ');
+                                     li.innerHTML = page_properties[i].property.replaceAll('_',' ');
+                                     ul.append(li);
+                                }
+                            }*/
+                                    //On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
+                                    $(".custom-menu li").click(function () {
                                         var clickedProperty = [$(this).attr("data-action")]
                                         var clickedPropertyColor = randomColor.randomHSL();
                                         if (!(clickedProperty in legendColors)) {
@@ -909,18 +911,18 @@ $(document).ready(function() {
                                             objColors[clickedProperty] = clickedPropertyColor;
                                         }
                                         if (!objClickedProps[nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id]) {
+                                            x: params.pointer.DOM.x,
+                                            y: params.pointer.DOM.y
+                                        })).id]) {
                                             objClickedProps[nodes.get(network.getNodeAt({
                                                 x: params.pointer.DOM.x,
                                                 y: params.pointer.DOM.y
                                             })).id] = new Array();
                                         }
                                         if (!objClickedProps["" + nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id].includes(clickedProperty[0])) {
+                                            x: params.pointer.DOM.x,
+                                            y: params.pointer.DOM.y
+                                        })).id].includes(clickedProperty[0])) {
                                             fetchData(nodes.get(network.getNodeAt({
                                                 x: params.pointer.DOM.x,
                                                 y: params.pointer.DOM.y
@@ -933,7 +935,7 @@ $(document).ready(function() {
                                                 y: params.pointer.DOM.y
                                             })).id].push(clickedProperty[0]);
                                         }
-                                        if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/ )) {
+                                        if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/)) {
                                             contextCreatedProps.push(clickedProperty[0]);
                                             options.groups[clickedProperty] = {
                                                 hidden: false
@@ -977,14 +979,14 @@ $(document).ready(function() {
                     }
                 });
                 // If the document is clicked somewhere it hides the context menu
-                $(document).bind("mousedown", function(e) {
+                $(document).bind("mousedown", function (e) {
                     // If the clicked element is not the menu
                     if (!$(e.target).parents(".custom-menu").length > 0) {
                         // Hide it
                         $(".custom-menu").hide(100);
                     }
                 });
-				//Add Node popup
+                //Add Node popup
                 function editNode(data, cancelAction, callback) {
                     var newNodeActive = true;
                     document.getElementById("node-label").value = data.label;
@@ -998,7 +1000,7 @@ $(document).ready(function() {
                         callback
                     );
                     //document.getElementById("node-popUp")
-                    $('canvas').on('click', function(e) {
+                    $('canvas').on('click', function (e) {
                         if (newNodeActive === true) {
                             $("#node-popUp").css({
                                 top: e.pageY + "px",
@@ -1009,7 +1011,7 @@ $(document).ready(function() {
                         newNodeActive = false;
                     });
                 }
-				
+
                 function clearNodePopUp() {
                     document.getElementById("node-saveButton").onclick = null;
                     document.getElementById("node-cancelButton").onclick = null;
@@ -1020,10 +1022,10 @@ $(document).ready(function() {
                     clearNodePopUp();
                     callback(null);
                 }
-				//saveNodeData to the graph
+                //saveNodeData to the graph
                 function saveNodeData(data, callback) {
                     data.label = document.getElementById("node-label").value;
-                    data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-',''); //create an UUID page in the Term namespace
+                    data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create an UUID page in the Term namespace
                     data.hidden = false;
                     data.physics = false;
                     document.getElementById("node-label").value = "";
@@ -1031,12 +1033,12 @@ $(document).ready(function() {
                     callback(data);
                     create_link();
                 }
-				//addEdge popup
+                //addEdge popup
                 function editEdgeWithoutDrag(data, callback) {
                     var newEdgeActive = true;
                     // filling in the popup DOM elements
                     document.getElementById("edge-label").value = data.label;
-                    
+
                     document.getElementById("edge-saveButton").onclick = saveEdgeData.bind(
                         this,
                         data,
@@ -1046,7 +1048,7 @@ $(document).ready(function() {
                         this,
                         callback
                     );
-                    $('canvas').on('click', function(e) {
+                    $('canvas').on('click', function (e) {
                         if (newEdgeActive === true) {
                             $("#edge-popUp").css({
                                 top: e.pageY + "px",
@@ -1072,7 +1074,7 @@ $(document).ready(function() {
 
                 //Save button on create edge popup
                 async function saveEdgeData(data, callback) {
-                	//Sets various options to the nodes that the edge gets connected
+                    //Sets various options to the nodes that the edge gets connected
                     if (typeof data.to === "object") data.to = data.to.id;
                     if (typeof data.from === "object") data.from = data.from.id;
                     data.label = document.getElementById("edge-label").value;
@@ -1146,76 +1148,78 @@ $(document).ready(function() {
                         obj = fromNode;
                         property = reverseLabel(property)
                     }
-                        var page = await mwjson.api.getPage(obj.id);
-                        if (!page.exists) {
-                            if (!(newNodes[obj.id])) {
-                                page.title = obj.id;
-                                page.dict = [{
-                                    'OslTemplate:KB/Term': {
-                                        'label': obj.label,
-                                        'label_lang_code': 'en',
-                                        'description': "",
-                                        'relations': []
-                                    }}
-                                    ,"\n=Details=\n\n",
-                                    {'OslTemplate:KB/Term/Footer': {}}
-                                ];
-                                newNodes[obj.id] = page;
+                    var page = await mwjson.api.getPage(obj.id);
+                    if (!page.exists) {
+                        if (!(newNodes[obj.id])) {
+                            page.title = obj.id;
+                            page.dict = [{
+                                'OslTemplate:KB/Term': {
+                                    'label': obj.label,
+                                    'label_lang_code': 'en',
+                                    'description': "",
+                                    'relations': []
+                                }
                             }
+                                , "\n=Details=\n\n",
+                            { 'OslTemplate:KB/Term/Footer': {} }
+                            ];
+                            newNodes[obj.id] = page;
                         }
-                        page = await mwjson.api.getPage(sub.id);
-                        if (page.exists) {
-                            await mwjson.parser.init();
-                            mwjson.parser.parsePage(page);
-                            if (editNodes[sub.id]) {
-                                page = editNodes[sub.id]; //use stored version
-                            } else {
-
-                                if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                    //there is already a KB/Term Template
-                                } else {
-                                    console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
-                                    mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
-                                            'label': sub.label,
-                                            'label_lang_code': 'en',
-                                            'description': "",
-                                            'relations': []
-                                        }
-                                    );
-                                }
-                            }
-
-                            mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
-                                'OslTemplate:KB/Relation': {
-                                    'property': property,
-                                    'value': obj.id
-                                }
-                            });
-                            editNodes[sub.id] = page; //store page state
+                    }
+                    page = await mwjson.api.getPage(sub.id);
+                    if (page.exists) {
+                        await mwjson.parser.init();
+                        mwjson.parser.parsePage(page);
+                        if (editNodes[sub.id]) {
+                            page = editNodes[sub.id]; //use stored version
                         } else {
-                            if (!newNodes[sub.id]) {
-                                page.title = sub.id;
-                                page.dict = [{
-                                    'OslTemplate:KB/Term': {
-                                        'label': sub.label,
-                                        'label_lang_code': 'en',
-                                        'description': "",
-                                        'relations': []
-                                    }},
-                                    "\n=Details=\n\n",
-                                    {'OslTemplate:KB/Term/Footer': {}}
-                                ];
+
+                            if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
+                                //there is already a KB/Term Template
                             } else {
-                                page = newNodes[sub.id];
-                            }
-                            mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
-                                'OslTemplate:KB/Relation': {
-                                    'property': property,
-                                    'value': obj.id
+                                console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                                mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
+                                    'label': sub.label,
+                                    'label_lang_code': 'en',
+                                    'description': "",
+                                    'relations': []
                                 }
-                            });
-                            newNodes[sub.id] = page;
+                                );
+                            }
                         }
+
+                        mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                            'OslTemplate:KB/Relation': {
+                                'property': property,
+                                'value': obj.id
+                            }
+                        });
+                        editNodes[sub.id] = page; //store page state
+                    } else {
+                        if (!newNodes[sub.id]) {
+                            page.title = sub.id;
+                            page.dict = [{
+                                'OslTemplate:KB/Term': {
+                                    'label': sub.label,
+                                    'label_lang_code': 'en',
+                                    'description': "",
+                                    'relations': []
+                                }
+                            },
+                                "\n=Details=\n\n",
+                            { 'OslTemplate:KB/Term/Footer': {} }
+                            ];
+                        } else {
+                            page = newNodes[sub.id];
+                        }
+                        mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                            'OslTemplate:KB/Relation': {
+                                'property': property,
+                                'value': obj.id
+                            }
+                        });
+                        newNodes[sub.id] = page;
+                    }
                     //console.log(sub);
                     //console.log(obj);
                     //console.log(editNodes);
@@ -1234,68 +1238,69 @@ $(document).ready(function() {
                 saveBtn.style.width = "auto";
                 saveBtn.style.height = "auto";
                 if (input.edit) givenDiv.appendChild(saveBtn);
-                
+
                 searchParams = new URLSearchParams(window.location.search);
-				var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
-				
+                var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
+
 
                 var copy_button = document.createElement("button");
                 copy_button.addEventListener("click", copy_link_data);
                 copy_button.innerHTML = "Copy permalink";
                 copy_button.style.width = "auto";
                 copy_button.style.height = "auto";
-                if(requested || input.permalink === "true" || searchParams.has('nodes')){
-                givenDiv.appendChild(copy_button);
+                if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                    givenDiv.appendChild(copy_button);
                 }
-                
-            	function copy_link_data() {
-            	  searchParams = new URLSearchParams(window.location.search);
-				  // variable content to be copied
-				  var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
-				  // create an input element
-				  let input = document.createElement('input');
-				  // setting it's type to be text
-				  input.setAttribute('type', 'text');
-				  // setting the input value to equal to the text we are copying
-				  input.value = copyText;
-				  // appending it to the document
-				  document.body.appendChild(input);
-				  // calling the select, to select the text displayed
-				  // if it's not in the document we won't be able to
-				  input.select();
-				  // calling the copy command
-				  document.execCommand("copy");
-				  // removing the input from the document
-				  document.body.removeChild(input)
-				}
-				
 
-                function create_link(){
-                	
-                	searchParams = new URLSearchParams(window.location.search);
-					var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
-                	
-            		if(requested || input.permalink === "true" || searchParams.has('nodes')){
-            		if(!searchParams.has('nodes')){
-            		window.history.replaceState(null, document.title, "?&nodes=&edges");}
-            		searchParams = new URLSearchParams(window.location.search);
-					var e_nodes = btoa(JSON.stringify(nodes.get()));
-					var e_edges = btoa(JSON.stringify(edges.get()));
-					
-					searchParams.set("nodes", "" + e_nodes);
-					searchParams.set("edges", "" + e_edges);
-					
-					
-					window.history.pushState({}, '', "?&" + searchParams);
-            		}
-					//window.location.search = searchParams.append('#', '42');
+                function copy_link_data() {
+                    searchParams = new URLSearchParams(window.location.search);
+                    // variable content to be copied
+                    var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
+                    // create an input element
+                    let input = document.createElement('input');
+                    // setting it's type to be text
+                    input.setAttribute('type', 'text');
+                    // setting the input value to equal to the text we are copying
+                    input.value = copyText;
+                    // appending it to the document
+                    document.body.appendChild(input);
+                    // calling the select, to select the text displayed
+                    // if it's not in the document we won't be able to
+                    input.select();
+                    // calling the copy command
+                    document.execCommand("copy");
+                    // removing the input from the document
+                    document.body.removeChild(input)
                 }
-                
-				
-				//Called on save button click. Creates new wiki pages or edits them with the created wiki text.
+
+
+                function create_link() {
+
+                    searchParams = new URLSearchParams(window.location.search);
+                    var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
+
+                    if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                        if (!searchParams.has('nodes')) {
+                            window.history.replaceState(null, document.title, "?&nodes=&edges");
+                        }
+                        searchParams = new URLSearchParams(window.location.search);
+                        var e_nodes = btoa(JSON.stringify(nodes.get()));
+                        var e_edges = btoa(JSON.stringify(edges.get()));
+
+                        searchParams.set("nodes", "" + e_nodes);
+                        searchParams.set("edges", "" + e_edges);
+
+
+                        window.history.pushState({}, '', "?&" + searchParams);
+                    }
+                    //window.location.search = searchParams.append('#', '42');
+                }
+
+
+                //Called on save button click. Creates new wiki pages or edits them with the created wiki text.
                 function saveGraphChanges() {
                     var alertString = "";
-                    OO.ui.confirm('Submit changes?').done(async function(confirmed) {
+                    OO.ui.confirm('Submit changes?').done(async function (confirmed) {
                         if (confirmed) {
                             for (const [key, page] of Object.entries(newNodes)) {
                                 mwjson.parser.updateContent(page);
@@ -1331,12 +1336,12 @@ $(document).ready(function() {
                             }*/
                             for (const [key, value] of Object.entries(editDeletedNodes)) {
                                 var params = {
-                                        action: 'delete',
-                                        title: '' + key,
-                                        format: 'json'
-                                    },
+                                    action: 'delete',
+                                    title: '' + key,
+                                    format: 'json'
+                                },
                                     api = new mw.Api();
-                                await api.postWithToken('csrf', params).done(function(data) {
+                                await api.postWithToken('csrf', params).done(function (data) {
                                     console.log(data);
                                     alertString += "Seite " + key + " wurde gelöscht!\r\n"
                                 });
@@ -1367,11 +1372,11 @@ $(document).ready(function() {
                             editNodes = {};
                             editDeletedNodes = {};
 
-                        } else {}
+                        } else { }
                     });
                     create_link();
                 }
-				//Deletes node in manipulation mode and the wiki page.
+                //Deletes node in manipulation mode and the wiki page.
                 function deleteSelectedNode(data, callback) {
                     deleteNodesChildren(data.nodes[0]);
                     nodes.remove(data.nodes[0]);
@@ -1425,7 +1430,7 @@ $(document).ready(function() {
                         sub = edgeToNode;
                         obj = edgeFromNode;
                         property = isg.util.reverseLabel(property)
-                    } 
+                    }
                     var page = {};
                     if (newNodes[sub]) page = newNodes[sub];
                     else if (editNodes[sub]) page = editNodes[sub];
@@ -1433,23 +1438,23 @@ $(document).ready(function() {
                     await mwjson.parser.init();
                     if (page.exists) {
                         mwjson.parser.parsePage(page);
-                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], {'property': edgeLabel, 'value': obj}, {}); //delete relation
+                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
                         editNodes[sub] = page;
                     } else {
                         if (network.getConnectedNodes(sub).length == 0) {
                             delete newNodes[sub];
                         } else {
-                            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], {'property': edgeLabel, 'value': obj}, {}); //delete relation
+                            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
                             newNodes[sub] = page;
                         }
                     }
-                    
+
                     //nodes.remove(edges.get(data.edges[0]).to);
                     callback(data);
                     document.querySelector('.vis-delete').remove();
                     create_link();
                 }
-                
+
                 //HTML for the manipulation popups
                 var editHtml = '' +
                     '<div id="node-popUp">' +
@@ -1485,7 +1490,7 @@ $(document).ready(function() {
                 document.body.appendChild(editHtmlDiv);
                 //dragElement(document.getElementById("node-popUp"));
                 //dragElement(document.getElementById("edge-popUp"));
-                
+
                 //function to make the manipulation popups draggable
                 function dragElement(elmnt) {
                     var pos1 = 0,
