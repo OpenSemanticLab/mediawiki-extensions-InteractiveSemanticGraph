@@ -68,7 +68,7 @@ $(document).ready(function () {
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false };
+                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false };
                 var userOptions = {};
                 if (this.innerHTML !== "") {//ToDo: use data attributes
                     var userOptions = JSON.parse(this.innerHTML);
@@ -132,7 +132,7 @@ $(document).ready(function () {
                             }
 
                             for (var i = 0; i < properties.length; i++) {
-
+                                var labelOffset = 0;
                                 for (var j = 0; j < data.query.results[root].printouts[properties[i]].length; j++) {
 
                                     //define colors
@@ -147,20 +147,32 @@ $(document).ready(function () {
                                     var id = isg.util.uuidv4(); //default: UUID
                                     var label = "";
                                     var isLiteral = true;
+                                    var isNonExistingPage = false;
+                                    
                                     if (data.query.results[root].printouts[properties[i]][j].fulltext) {
                                         if (data.query.results[root].printouts[properties[i]][j].exists === "1") {
                                             id = data.query.results[root].printouts[properties[i]][j].fulltext; //use pagename as id for pages
-                                            isLiteral = false;
+                                            isLiteral = isNonExistingPage = false;
                                         }
-                                        else label = data.query.results[root].printouts[properties[i]][j].fulltext; //treat non existing pages as literals
+                                        else {
+                                            isNonExistingPage = true;
+                                            labelOffset += 1; //skip 'gap' in Display title of result array
+                                            if (input.treat_non_existing_pages_as_literals) {
+                                                label = data.query.results[root].printouts[properties[i]][j].fulltext; //treat non existing pages as literals 
+                                            }
+                                            else {
+                                                id = data.query.results[root].printouts[properties[i]][j].fulltext; //use pagename as id for pages
+                                            }
+                                        }
                                     }
                                     else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
                                     else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp * 1000).toISOString(); //datetime
                                     else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
                                     if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
-                                    if (data.query.results[root].printouts[properties[i] + ".Display title of"][j]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j]; //explicit use property display title due to slow update of the displaytitle page field
+                                    if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".Display title of"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j+labelOffset]; //explicit use property display title due to slow update of the displaytitle page field
                                     if (label === "") label = id; //default label is id
                                     var color = colors[i];
+                                    if (isNonExistingPage) color = setColor = "##D3D3D3";
                                     if (isLiteral) color = setColor = "#FFFFFF";
                                     var shape = image = undefined;
                                     if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif"))) {
