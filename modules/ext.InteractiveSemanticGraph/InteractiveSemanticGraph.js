@@ -33,7 +33,6 @@ $(document).ready(function () {
         })
     ).done(function () {
         var pathId = 0;
-        var newNodes = {};
         var editNodes = {};
         var editDeletedEdges = {};
         var editDeletedNodes = {};
@@ -1148,9 +1147,9 @@ $(document).ready(function () {
                         obj = fromNode;
                         property = reverseLabel(property)
                     }
-                    var page = await mwjson.api.getPage(obj.id);
-                    if (!page.exists) {
-                        if (!(newNodes[obj.id])) {
+                    if (!editNodes[obj.id]) { //object page not handled yet
+                        var page = await mwjson.api.getPage(obj.id);
+                        if (!page.exists) { //create page with default content
                             page.title = obj.id;
                             page.dict = [{
                                 'OslTemplate:KB/Term': {
@@ -1163,17 +1162,15 @@ $(document).ready(function () {
                                 , "\n=Details=\n\n",
                             { 'OslTemplate:KB/Term/Footer': {} }
                             ];
-                            newNodes[obj.id] = page;
+                        editNodes[obj.id] = page; //store page state
                         }
                     }
-                    page = await mwjson.api.getPage(sub.id);
-                    if (page.exists) {
-                        await mwjson.parser.init();
-                        mwjson.parser.parsePage(page);
-                        if (editNodes[sub.id]) {
-                            page = editNodes[sub.id]; //use stored version
-                        } else {
-
+                    var page = undefined;
+                    if (!editNodes[sub.id]) { //subject page not handled yet
+                        page = await mwjson.api.getPage(sub.id);
+                        if (page.exists) {
+                            await mwjson.parser.init();
+                            mwjson.parser.parsePage(page);
                             if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
                                 //there is already a KB/Term Template
                             } else {
@@ -1187,16 +1184,7 @@ $(document).ready(function () {
                                 );
                             }
                         }
-
-                        mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
-                            'OslTemplate:KB/Relation': {
-                                'property': property,
-                                'value': obj.id
-                            }
-                        });
-                        editNodes[sub.id] = page; //store page state
-                    } else {
-                        if (!newNodes[sub.id]) {
+                        else { //create page with default content
                             page.title = sub.id;
                             page.dict = [{
                                 'OslTemplate:KB/Term': {
@@ -1209,21 +1197,21 @@ $(document).ready(function () {
                                 "\n=Details=\n\n",
                             { 'OslTemplate:KB/Term/Footer': {} }
                             ];
-                        } else {
-                            page = newNodes[sub.id];
                         }
-                        mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
-                            'OslTemplate:KB/Relation': {
-                                'property': property,
-                                'value': obj.id
-                            }
-                        });
-                        newNodes[sub.id] = page;
+                        editNodes[sub.id] = page; //store page state    
                     }
+                    else page = editNodes[sub.id]; //use stored state
+                    mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                        'OslTemplate:KB/Relation': {
+                            'property': property,
+                            'value': obj.id
+                        }
+                    });
+                    editNodes[sub.id] = page; //update stored page state    
+                    
                     //console.log(sub);
                     //console.log(obj);
                     //console.log(editNodes);
-                    //console.log(newNodes);
                     clearEdgePopUp();
                     callback(data);
                     network.setOptions(options);
@@ -1302,15 +1290,6 @@ $(document).ready(function () {
                     var alertString = "";
                     OO.ui.confirm('Submit changes?').done(async function (confirmed) {
                         if (confirmed) {
-                            for (const [key, page] of Object.entries(newNodes)) {
-                                mwjson.parser.updateContent(page);
-                                mwjson.api.updatePage(page, "Created with InteractiveSemanticGraph").then((page) => {
-                                    newNodes[key] = page;
-                                    alertString += "Page " + page.title + " created!\r\n"
-                                }, (error) => {
-                                    console.log(error);
-                                });
-                            }
                             for (const [key, page] of Object.entries(editNodes)) {
                                 mwjson.parser.updateContent(page);
                                 mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph").then((page) => {
@@ -1368,7 +1347,6 @@ $(document).ready(function () {
                                 console.log( alertString );
                             } );*/
                             //cleanup
-                            newNodes = {};
                             editNodes = {};
                             editDeletedNodes = {};
 
@@ -1398,7 +1376,6 @@ $(document).ready(function () {
                     callback();
                     document.querySelector('.vis-delete').remove();
                     editDeletedNodes["" + data.nodes[0]] = "";
-                    delete newNodes["" + data.nodes[0]];
                     delete editNodes["" + data.nodes[0]];
                     create_link();
                 }
@@ -1432,8 +1409,7 @@ $(document).ready(function () {
                         property = isg.util.reverseLabel(property)
                     }
                     var page = {};
-                    if (newNodes[sub]) page = newNodes[sub];
-                    else if (editNodes[sub]) page = editNodes[sub];
+                    if (editNodes[sub]) page = editNodes[sub];
                     else page = await mwjson.api.getPage(sub);
                     await mwjson.parser.init();
                     if (page.exists) {
@@ -1442,10 +1418,10 @@ $(document).ready(function () {
                         editNodes[sub] = page;
                     } else {
                         if (network.getConnectedNodes(sub).length == 0) {
-                            delete newNodes[sub];
+                            delete editNodes[sub];
                         } else {
                             mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
-                            newNodes[sub] = page;
+                            editNodes[sub] = page;
                         }
                     }
 
