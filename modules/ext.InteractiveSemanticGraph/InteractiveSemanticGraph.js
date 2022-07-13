@@ -162,7 +162,7 @@ $(document).ready(function() {
                                     if (label === "") label = id; //default label is id
                                     var color = colors[i];
                                     if (isLiteral) color = setColor = "#FFFFFF";
-                                    var shape = image = "undefined";
+                                    var shape = image = undefined;
                                     if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif")) ) {
                                         image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:","")}&width=200&height=200`;
                                         shape = "image";
