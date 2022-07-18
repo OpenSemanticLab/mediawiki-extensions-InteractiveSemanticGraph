@@ -68,7 +68,7 @@ $(document).ready(function () {
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false };
+                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
                 if (this.innerHTML !== "") {//ToDo: use data attributes
                     var userOptions = JSON.parse(this.innerHTML);
@@ -168,8 +168,10 @@ $(document).ready(function () {
                                     else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
                                     else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp * 1000).toISOString(); //datetime
                                     else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
-                                    if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
+
+                                    //if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]; //explicit use label in user language
                                     if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".Display title of"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j+labelOffset]; //explicit use property display title due to slow update of the displaytitle page field
+                                    else if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
                                     if (label === "") label = id; //default label is id
                                     var color = colors[i];
                                     if (isNonExistingPage) color = setColor = "##D3D3D3";
@@ -180,6 +182,9 @@ $(document).ready(function () {
                                         shape = "image";
                                         label = "";
                                     }
+                                    var edgeLabel = properties[i];
+                                    //if (!input.edge_labels) edgeLabel = undefined; //some features depend on the labels, so we can't simple remove them
+
                                     if (isLabelSet(id) === false) { //test if node with id exists
                                         if (setGroup && setColor) {
                                             nodes.add({
@@ -213,7 +218,7 @@ $(document).ready(function () {
                                             edges.add({
                                                 from: nodeID,
                                                 to: id,
-                                                label: properties[i],
+                                                label: edgeLabel,
                                                 color: colors[i],
                                                 group: properties[i]
                                             });
@@ -221,7 +226,7 @@ $(document).ready(function () {
                                             edges.add({
                                                 from: input.root,
                                                 to: id,
-                                                label: properties[i],
+                                                label: edgeLabel,
                                                 color: colors[i],
                                                 group: properties[i]
                                             });
@@ -230,7 +235,7 @@ $(document).ready(function () {
                                         edges.add({
                                             from: nodeID,
                                             to: isLabelSet(id),
-                                            label: properties[i],
+                                            label: edgeLabel,
                                             color: setColor,
                                             group: properties[i]
                                         });
@@ -299,7 +304,8 @@ $(document).ready(function () {
                                 enabled: true
                             },
                             //from:{enabled: true}
-                        }
+                        },
+                        font: {size: input.edge_labels? 14 : 0} //optional hide labels by set font size to zero
                     },
                     groups: {
                         useDefaultGroups: false
