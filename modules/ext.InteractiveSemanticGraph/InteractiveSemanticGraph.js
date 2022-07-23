@@ -324,6 +324,9 @@ $(document).ready(function () {
                         maxVelocity: 5
                     },
                 };
+                //Allow custom visnetwork options
+                options = { ...options, ...input.visnetwork };
+
                 //Creates groups in the options and sets them all to hidden:false.
                 for (var i = 0; i < input.properties.length; i++) {
                     options.groups[input.properties[i]] = {
