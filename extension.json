@@ -6,7 +6,7 @@
         "[https://github.com/simontaurus Simon Stier]",
         "[https://github.com/AlexanderPraktikum2021 Alexander Triol]"
     ],
-    "url":"https://github.com/simontaurus/mediawiki-extensions-InteractiveSemanticGraph",
+    "url":"https://github.com/OpenSemanticLab/mediawiki-extensions-InteractiveSemanticGraph",
     "descriptionmsg":"interactive-semantic-graph-desc",
     "namemsg":"interactive-semantic-graph-name",
     "license-name":"AGPL-3.0-or-later",
@@ -30,8 +30,10 @@
                 "InteractiveSemanticGraph.css"
             ],
             "scripts":[
+                "vis-network.min.js",
                 "InteractiveSemanticGraph.js",
                 "InteractiveSemanticGraphUtils.js",
+                "split-grid.min.js",
                 "InteractiveSemanticGraphBrowser.js"
             ],
             "position":"bottom"

@@ -118,17 +118,9 @@ $(document).ready(function () {
 
 	if (!$(".InteractiveSemanticGraphBrowser")) return;
 	//mw.loader.load("//some-server/some.css", "text/css");
-	$.when(
-		$.getScript("https://unpkg.com/split-grid/dist/split-grid.js"),
-		$.getScript("https://code.jquery.com/ui/1.13.1/jquery-ui.js"),
-		$.Deferred(function (deferred) {
-			$(deferred.resolve);
-		})
-	).done( function () {
-		console.log("InteractiveSemanticGraphBrowser init");
-		$(".InteractiveSemanticGraphBrowser").each( function() {
-			var browser = new isg.browser(this);
-		});
+	console.log("InteractiveSemanticGraphBrowser init");
+	$(".InteractiveSemanticGraphBrowser").each( function() {
+		var browser = new isg.browser(this);
 	});
 
 });

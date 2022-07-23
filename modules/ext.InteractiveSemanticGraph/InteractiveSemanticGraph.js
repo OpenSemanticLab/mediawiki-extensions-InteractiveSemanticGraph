@@ -27,7 +27,6 @@ $(document).ready(function () {
         mw.loader.using('ext.mwjson.util'),
         mw.loader.using('ext.mwjson.api'),
         mw.loader.using('ext.mwjson.parser'),
-        $.getScript("//unpkg.com/vis-network/standalone/umd/vis-network.min.js"),
         $.Deferred(function (deferred) {
             $(deferred.resolve);
         })
