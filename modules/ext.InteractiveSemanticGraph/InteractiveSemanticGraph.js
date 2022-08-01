@@ -69,9 +69,9 @@ $(document).ready(function () {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
                 var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
-                if (this.innerHTML !== "") {//ToDo: use data attributes
-                    var userOptions = JSON.parse(this.innerHTML);
-                }
+
+                if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
+                else if (this.innerText !== "") userOptions = JSON.parse(this.innerText); //Legacy support
                 var input = { ...defaultOptions, ...userOptions };
                 input.depth = parseInt(input.depth);
                 if (input.edit) mwjson.parser.init(); //start loading parser
@@ -492,7 +492,7 @@ $(document).ready(function () {
                 function deleteNodesChildren(nodeId, deleteEdge) {
                     var excludedIds = [];
                     if (deleteEdge === true) {
-                        console.log("deleteEdge true")
+                        //console.log("deleteEdge true")
                     } else {
                         excludedIds.push(nodeId);
                     }
@@ -757,7 +757,7 @@ $(document).ready(function () {
                     var timeDiff = timeNow - start
                     if (timeDiff > 300) {
                         start = Date.now();
-                        console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
+                        //console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
                         //console.log(edges.get(network.getEdgeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
                         $('.custom-menu').each(function (index) {
                             while (this.lastElementChild) {
@@ -1341,7 +1341,7 @@ $(document).ready(function () {
                                 },
                                     api = new mw.Api();
                                 await api.postWithToken('csrf', params).done(function (data) {
-                                    console.log(data);
+                                    //console.log(data);
                                     alertString += "Seite " + key + " wurde gelöscht!\r\n"
                                 });
                             }
