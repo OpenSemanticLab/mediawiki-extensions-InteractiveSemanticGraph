@@ -1046,6 +1046,7 @@ $(document).ready(function () {
                 function saveNodeData(data, callback) {
                     data.label = document.getElementById("node-label").value;
                     data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create an UUID page in the Term namespace
+                    data.url = "/wiki/" + data.id;
                     data.hidden = false;
                     data.physics = false;
                     document.getElementById("node-label").value = "";
