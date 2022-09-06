@@ -1314,7 +1314,7 @@ $(document).ready(function () {
                         if (confirmed) {
 
                             var error_occured = false;
-                            mw.notify('Do not close this windows', {
+                            mw.notify('Do not close this window', {
                                 title: "Saving...",
                                 type: 'warn'
                             });
@@ -1324,6 +1324,7 @@ $(document).ready(function () {
                                 mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph").then((page) => {
                                     editNodes[key] = page;
                                     alertString += "Page " + key + " edited!\r\n"
+                                    mwjson.api.purgePage(page.title);
                                 }, (error) => {
                                     error_occured = true;
                                     console.log(error);
@@ -1332,7 +1333,7 @@ $(document).ready(function () {
                                         type: 'error'
                                     });
                                 });
-                                mwjson.api.purgePage(page.title);
+                                
                             }
                             //edges are edit on the subject page
                             /*for (const [key, value] of Object.entries(editDeletedEdges)) {
