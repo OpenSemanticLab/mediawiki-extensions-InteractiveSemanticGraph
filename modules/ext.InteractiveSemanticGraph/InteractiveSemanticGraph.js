@@ -127,7 +127,8 @@ $(document).ready(function () {
                             if (!nodeID && root) { //first query on root node
                                 var rootNode = nodes.get(root);
                                 rootNode.url = data.query.results[root].fullurl;
-                                if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
+                                if (data.query.results[root].printouts["Display title of"]) rootNode.label = data.query.results[root].printouts["Display title of"][0];
+                                else if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
                             }
 
                             for (var i = 0; i < properties.length; i++) {
