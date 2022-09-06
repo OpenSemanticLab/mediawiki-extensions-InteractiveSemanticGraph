@@ -1311,13 +1311,25 @@ $(document).ready(function () {
                     var alertString = "";
                     OO.ui.confirm('Submit changes?').done(async function (confirmed) {
                         if (confirmed) {
+
+                            var error_occured = false;
+                            mw.notify('Do not close this windows', {
+                                title: "Saving...",
+                                type: 'warn'
+                            });
+
                             for (const [key, page] of Object.entries(editNodes)) {
                                 mwjson.parser.updateContent(page);
                                 mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph").then((page) => {
                                     editNodes[key] = page;
                                     alertString += "Page " + key + " edited!\r\n"
                                 }, (error) => {
+                                    error_occured = true;
                                     console.log(error);
+                                    mw.notify('An error occured while saving.', {
+                                        title: 'Error',
+                                        type: 'error'
+                                    });
                                 });
                                 mwjson.api.purgePage(page.title);
                             }
@@ -1341,7 +1353,7 @@ $(document).ready(function () {
                                     title: '' + key,
                                     format: 'json'
                                 },
-                                    api = new mw.Api();
+                                api = new mw.Api();
                                 await api.postWithToken('csrf', params).done(function (data) {
                                     //console.log(data);
                                     alertString += "Seite " + key + " wurde gelöscht!\r\n"
@@ -1368,6 +1380,16 @@ $(document).ready(function () {
                             /*OO.ui.alert( "" + alertString ).done( function () {
                                 console.log( alertString );
                             } );*/
+
+                            //Notify user. ToDo: wait for async api calls done
+                            if (!error_occured) {
+                                setTimeout(function(){
+                                    mw.notify('Saved', {
+                                        type: 'success'
+                                    });
+                                }, 2000);
+                            }
+
                             //cleanup
                             editNodes = {};
                             editDeletedNodes = {};
