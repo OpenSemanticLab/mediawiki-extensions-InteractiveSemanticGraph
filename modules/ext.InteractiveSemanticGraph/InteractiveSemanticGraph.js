@@ -1319,6 +1319,7 @@ $(document).ready(function () {
                                 }, (error) => {
                                     console.log(error);
                                 });
+                                mwjson.api.purgePage(page.title);
                             }
                             //edges are edit on the subject page
                             /*for (const [key, value] of Object.entries(editDeletedEdges)) {
