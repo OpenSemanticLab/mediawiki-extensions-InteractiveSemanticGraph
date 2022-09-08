@@ -1530,8 +1530,8 @@ $(document).ready(function () {
                     query: (input) => { return "[[Category:KB/Term]][[Display_title_of::like:*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage"; },
                     minInputLen : 1,
                     filter: (result, input) => { 
-                        if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().startsWith(input.toLowerCase()); 
-                        else return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().startsWith(input.toLowerCase());
+                        if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase()); 
+                        else return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase());
                     },
                     _renderResult: (result, props) => `
                     <li ${props}>
@@ -1559,7 +1559,7 @@ $(document).ready(function () {
                 mwjson.editor.createAutocompleteInput({
                     div_id: "isg-edge-label-autocomplete",
                     query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
-                    filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().startsWith(input.toLowerCase()); },
+                    filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase()); },
                     _renderResult: (result, props) => `
                     <li ${props}>
                         <div class="wiki-title">
