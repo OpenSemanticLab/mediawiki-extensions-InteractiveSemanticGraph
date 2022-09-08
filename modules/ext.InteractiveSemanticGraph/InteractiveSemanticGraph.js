@@ -27,6 +27,7 @@ $(document).ready(function () {
         mw.loader.using('ext.mwjson.util'),
         mw.loader.using('ext.mwjson.api'),
         mw.loader.using('ext.mwjson.parser'),
+        mw.loader.using('ext.mwjson.editor'),
         $.Deferred(function (deferred) {
             $(deferred.resolve);
         })
@@ -1044,12 +1045,22 @@ $(document).ready(function () {
                 }
                 //saveNodeData to the graph
                 function saveNodeData(data, callback) {
-                    data.label = document.getElementById("node-label").value;
-                    data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create an UUID page in the Term namespace
-                    data.url = "/wiki/" + data.id;
+                    const input_element = document.getElementById("node-label")
+                    data.label = input_element.value;
+                    if (input_element.dataset.result){ //existing page
+                        result = JSON.parse(input_element.dataset.result);
+                        data.id = result.fulltext;
+                        data.url = result.fullurl;
+                    }
+                    else {
+                        data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create a new UUID page in the Term namespace
+                        data.url = "/wiki/" + data.id;
+                    }
                     data.hidden = false;
                     data.physics = false;
-                    document.getElementById("node-label").value = "";
+                    console.log(data);
+                    input_element.value = "";
+                    input_element.dataset.result = "";
                     clearNodePopUp();
                     callback(data);
                     create_link();
@@ -1479,13 +1490,13 @@ $(document).ready(function () {
 
                 //HTML for the manipulation popups
                 var editHtml = '' +
-                    '<div id="node-popUp">' +
+                    '<div id="node-popUp" style="width: 350px; height: 200px;">' +
                     '  <span id="node-operation" style="cursor: move;">node</span> <br />' +
                     '  <table style="margin: auto">' +
                     '    <tbody>' +
                     '      <tr>' +
                     '        <td>label</td>' +
-                    '        <td><input id="node-label" value="" /></td>' +
+                    '        <td><div id="isg-node-label-autocomplete"><input id="node-label" class="autocomplete-input" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
                     '      </tr>' +
                     '    </tbody>' +
                     '  </table>' +
@@ -1493,13 +1504,13 @@ $(document).ready(function () {
                     '  <input type="button" value="cancel" id="node-cancelButton" />' +
                     '</div>' +
                     '' +
-                    '<div id="edge-popUp">' +
+                    '<div id="edge-popUp" style="width: 350px; height: 200px;">' +
                     '  <span id="edge-operation" style="cursor: move;">edge</span> <br />' +
                     '  <table style="margin: auto">' +
                     '    <tbody>' +
                     '      <tr>' +
                     '        <td>label</td>' +
-                    '        <td><input id="edge-label" value="" /></td>' +
+                    '        <td><div id="isg-edge-label-autocomplete"><input id="edge-label" class="autocomplete-input" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
                     '      </tr>' +
                     '    </tbody>' +
                     '  </table>' +
@@ -1512,6 +1523,46 @@ $(document).ready(function () {
                 document.body.appendChild(editHtmlDiv);
                 //dragElement(document.getElementById("node-popUp"));
                 //dragElement(document.getElementById("edge-popUp"));
+
+                //init autocompletion
+                mwjson.editor.createAutocompleteInput({
+                    div_id: "isg-node-label-autocomplete",
+                    query: (input) => { return "[[Category:KB/Term]][[Display_title_of::like:*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription"; },
+                    filter: (result, input) => { 
+                        if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().startsWith(input.toLowerCase()); 
+                        else return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().startsWith(input.toLowerCase());
+                    },
+                    render: (result, props) => `
+                    <li ${props}>
+                        <div class="wiki-title">
+                            ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : result.fulltext}
+                        </div>
+                    </li>
+                    <div class="wiki-snippet">
+                        ${result.printouts['HasDescription'][0] ? result.printouts['HasDescription'][0] : ''}
+                    </div>
+                    `,
+                    getResultValue: result => { 
+                        if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0]; 
+                        else return result.fulltext.split(":")[result.fulltext.split(":").length - 1];
+                    },
+                    onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
+                });
+                mwjson.editor.createAutocompleteInput({
+                    div_id: "isg-edge-label-autocomplete",
+                    query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
+                    filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().startsWith(input.toLowerCase()); },
+                    render: (result, props) => `
+                    <li ${props}>
+                        <div class="wiki-title">
+                            ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : mwjson.util.stripNamespace(result.fulltext)}
+                        </div>
+                    </li>
+                    ${result.printouts['HasDescription'][0] ? '<div class="wiki-snippet">' + result.printouts['HasDescription'][0] + '</div>': ''}
+                    `,
+                    getResultValue: result => result.fulltext.split(":")[result.fulltext.split(":").length - 1],
+                    onSubmit: result => document.querySelector('#edge-label').dataset.result = JSON.stringify(result)
+                });
 
                 //function to make the manipulation popups draggable
                 function dragElement(elmnt) {
