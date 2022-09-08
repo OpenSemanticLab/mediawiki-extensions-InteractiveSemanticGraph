@@ -1010,7 +1010,7 @@ $(document).ready(function () {
                 //Add Node popup
                 function editNode(data, cancelAction, callback) {
                     var newNodeActive = true;
-                    document.getElementById("node-label").value = data.label;
+                    //document.getElementById("node-label").value = data.label;
                     document.getElementById("node-saveButton").onclick = saveNodeData.bind(
                         this,
                         data,
@@ -1069,7 +1069,7 @@ $(document).ready(function () {
                 function editEdgeWithoutDrag(data, callback) {
                     var newEdgeActive = true;
                     // filling in the popup DOM elements
-                    document.getElementById("edge-label").value = data.label;
+                    //document.getElementById("edge-label").value = data.label;
 
                     document.getElementById("edge-saveButton").onclick = saveEdgeData.bind(
                         this,
@@ -1490,13 +1490,13 @@ $(document).ready(function () {
 
                 //HTML for the manipulation popups
                 var editHtml = '' +
-                    '<div id="node-popUp" style="width: 350px; height: 200px;">' +
+                    '<div id="node-popUp" style="width: 550px; height: 200px;">' +
                     '  <span id="node-operation" style="cursor: move;">node</span> <br />' +
                     '  <table style="margin: auto">' +
                     '    <tbody>' +
                     '      <tr>' +
                     '        <td>label</td>' +
-                    '        <td><div id="isg-node-label-autocomplete"><input id="node-label" class="autocomplete-input" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
+                    '        <td><div id="isg-node-label-autocomplete"><input id="node-label" class="autocomplete-input" style="width: 480px;" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
                     '      </tr>' +
                     '    </tbody>' +
                     '  </table>' +
@@ -1510,7 +1510,7 @@ $(document).ready(function () {
                     '    <tbody>' +
                     '      <tr>' +
                     '        <td>label</td>' +
-                    '        <td><div id="isg-edge-label-autocomplete"><input id="edge-label" class="autocomplete-input" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
+                    '        <td><div id="isg-edge-label-autocomplete"><input id="edge-label" class="autocomplete-input" style="width: 280px;" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
                     '      </tr>' +
                     '    </tbody>' +
                     '  </table>' +
@@ -1527,12 +1527,13 @@ $(document).ready(function () {
                 //init autocompletion
                 mwjson.editor.createAutocompleteInput({
                     div_id: "isg-node-label-autocomplete",
-                    query: (input) => { return "[[Category:KB/Term]][[Display_title_of::like:*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription"; },
+                    query: (input) => { return "[[Category:KB/Term]][[Display_title_of::like:*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage"; },
+                    minInputLen : 1,
                     filter: (result, input) => { 
                         if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().startsWith(input.toLowerCase()); 
                         else return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().startsWith(input.toLowerCase());
                     },
-                    render: (result, props) => `
+                    _renderResult: (result, props) => `
                     <li ${props}>
                         <div class="wiki-title">
                             ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : result.fulltext}
@@ -1542,6 +1543,13 @@ $(document).ready(function () {
                         ${result.printouts['HasDescription'][0] ? result.printouts['HasDescription'][0] : ''}
                     </div>
                     `,
+                    renderMode: "wikitext",
+                    renderResult: (result, props) => {
+                        var wikitext = "";
+                        if (result.printouts['HasImage'][0]) wikitext += `[[${result.printouts['HasImage'][0]['fulltext']}|right|x66px|link=]]`;
+                        wikitext += `</br> [[${result.fulltext}]]`;
+                        return wikitext;
+                    },
                     getResultValue: result => { 
                         if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0]; 
                         else return result.fulltext.split(":")[result.fulltext.split(":").length - 1];
@@ -1552,7 +1560,7 @@ $(document).ready(function () {
                     div_id: "isg-edge-label-autocomplete",
                     query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
                     filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().startsWith(input.toLowerCase()); },
-                    render: (result, props) => `
+                    _renderResult: (result, props) => `
                     <li ${props}>
                         <div class="wiki-title">
                             ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : mwjson.util.stripNamespace(result.fulltext)}
@@ -1560,6 +1568,12 @@ $(document).ready(function () {
                     </li>
                     ${result.printouts['HasDescription'][0] ? '<div class="wiki-snippet">' + result.printouts['HasDescription'][0] + '</div>': ''}
                     `,
+                    renderMode: "wikitext",
+                    renderResult: (result, props) => {
+                        var wikitext = "";
+                        wikitext += `[[${result.fulltext}|${mwjson.util.stripNamespace(result.fulltext)}]]`;
+                        return wikitext;
+                    },
                     getResultValue: result => result.fulltext.split(":")[result.fulltext.split(":").length - 1],
                     onSubmit: result => document.querySelector('#edge-label').dataset.result = JSON.stringify(result)
                 });
