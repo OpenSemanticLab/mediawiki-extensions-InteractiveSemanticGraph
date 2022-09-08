@@ -1323,7 +1323,7 @@ $(document).ready(function () {
                     var alertString = "";
                     OO.ui.confirm('Submit changes?').done(async function (confirmed) {
                         if (confirmed) {
-
+                            var promises = [];
                             var error_occured = false;
                             mw.notify('Do not close this window', {
                                 title: "Saving...",
@@ -1332,7 +1332,9 @@ $(document).ready(function () {
 
                             for (const [key, page] of Object.entries(editNodes)) {
                                 mwjson.parser.updateContent(page);
-                                mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph").then((page) => {
+                                promise = mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph");
+                                promises.append(promise);
+                                promise.then((page) => {
                                     editNodes[key] = page;
                                     alertString += "Page " + key + " edited!\r\n"
                                     mwjson.api.purgePage(page.title);
@@ -1394,14 +1396,12 @@ $(document).ready(function () {
                                 console.log( alertString );
                             } );*/
 
-                            //Notify user. ToDo: wait for async api calls done
-                            if (!error_occured) {
-                                setTimeout(function(){
-                                    mw.notify('Saved', {
-                                        type: 'success'
-                                    });
-                                }, 2000);
-                            }
+                            //Notify user. 
+                            Promise.allSettled(promises).then(([result]) => {
+                                mw.notify('Saved', {
+                                    type: 'success'
+                                });
+                            });
 
                             //cleanup
                             editNodes = {};
