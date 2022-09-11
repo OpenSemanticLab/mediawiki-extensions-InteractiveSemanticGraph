@@ -172,6 +172,7 @@ $(document).ready(function () {
                                     }
                                     else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
                                     else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp * 1000).toISOString(); //datetime
+                                    else if (data.query.results[root].printouts[properties[i]][j]['Language code']) label = data.query.results[root].printouts[properties[i]][j]['Text'].item[0] + ' (' + data.query.results[root].printouts[properties[i]][j]['Language code'].item[0] + ')'; //multi lang label
                                     else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
 
                                     //if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]; //explicit use label in user language
