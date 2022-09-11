@@ -6,17 +6,20 @@ REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraphBrowser.js
 hint: ResourceLoader minifier does not support ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
 */
 
-class isg {
-	constructor() {
-	}
-}
-
 isg.browser = class {
 	constructor(element) {
 		this.debug = true;
 		this.uid = (performance.now().toString(36) + Math.random().toString(36)).replace(/\./g, "");
 		
 		this.$element = $(element);
+
+		//load and apply user settings
+		var userconfig = {};
+		if (this.$element.data('config')) userconfig = this.$element.data('config');
+		this.config = {"initial_tabs": [{"title": "Main_page", "label": "Main page"}]};
+		this.config = {...this.config, ...userconfig};
+		console.log(this.config);
+
 		this.$element.attr('id', `isgb-${this.uid}-container`);
 		this.$element.attr('style', 'display:grid; grid-template-columns: 1fr 10px 1fr');
 		
@@ -68,7 +71,9 @@ isg.browser = class {
 			}
 		});
 		
-		this.addTab("Main_page");
+		this.config.initial_tabs.forEach(element => {
+			this.addTab(element.title, element.label);
+		});
 		
 		mw.hook( 'isg.node.clicked' ).add( (node) => {
 			if (node.url) { //skip literals
@@ -84,8 +89,9 @@ isg.browser = class {
 		$(`#${id}`).find('iframe').attr('src', url);
 	}
 	
-	addTab(title) {
+	addTab(title, label) {
 		if (!title) title = "Main_page";
+		if (!label) title = "Main page";
 		var index = this.index;
 		this.index += 1;
 		var $header = `<li><a href="#isgb-${this.uid}-tab-${index}">${title}</a> <span class='ui-icon ui-icon-close' role='presentation'>Remove Tab</span></li>`;
@@ -97,7 +103,8 @@ isg.browser = class {
 		this.tabs.append($tab);
 		this.tabs.tabs( "refresh" );
 		this.tabs.find(`[href="#isgb-${this.uid}-tab-${index}"]`).click(); //activate tab
-		
+		this.tabs.find( ".ui-tabs-active" ).find('a').text(label);
+		//this.navigate(`/wiki/${title}`, label)
 	}
 	
 	removeTab(id) {
@@ -111,17 +118,9 @@ $(document).ready(function () {
 
 	if (!$(".InteractiveSemanticGraphBrowser")) return;
 	//mw.loader.load("//some-server/some.css", "text/css");
-	$.when(
-		$.getScript("https://unpkg.com/split-grid/dist/split-grid.js"),
-		$.getScript("https://code.jquery.com/ui/1.13.1/jquery-ui.js"),
-		$.Deferred(function (deferred) {
-			$(deferred.resolve);
-		})
-	).done( function () {
-		console.log("InteractiveSemanticGraphBrowser init");
-		$(".InteractiveSemanticGraphBrowser").each( function() {
-			var browser = new isg.browser(this);
-		});
+	console.log("InteractiveSemanticGraphBrowser init");
+	$(".InteractiveSemanticGraphBrowser").each( function() {
+		var browser = new isg.browser(this);
 	});
 
 });

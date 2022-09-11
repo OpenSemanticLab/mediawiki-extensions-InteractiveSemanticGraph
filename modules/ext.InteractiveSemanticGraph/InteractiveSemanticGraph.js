@@ -5,52 +5,79 @@ REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraph.js
 hint: ResourceLoader minifier does not support ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
 */
 
-$(document).ready(function() {
-    $.getScript('https://unpkg.com/vis-network/standalone/umd/vis-network.min.js').done(function() {
+//Root class
+class isg {
+    constructor() {
+
+    }
+    static version = "0.0.1";
+
+    static getVersion() {
+        return this.version;
+    }
+}
+
+// Assigning namespace.
+window.isg = isg;
+
+
+$(document).ready(function () {
+
+    $.when(
+        mw.loader.using('ext.mwjson.util'),
+        mw.loader.using('ext.mwjson.api'),
+        mw.loader.using('ext.mwjson.parser'),
+        mw.loader.using('ext.mwjson.editor'),
+        $.Deferred(function (deferred) {
+            $(deferred.resolve);
+        })
+    ).done(function () {
         var pathId = 0;
-        var newNodes = {};
         var editNodes = {};
         var editDeletedEdges = {};
         var editDeletedNodes = {};
+        var editTargetNodes = []; 
         var param_nodes_set = false;
         //Draws graph from url
-        function read_link(input, nodes, edges, colors, element){
-        	param_nodes_set = true;
-        	
-        	var d_nodes = JSON.parse(atob(searchParams.get("nodes")));
-        	var d_edges = JSON.parse(atob(searchParams.get("edges")));
-        	
-        	input.root = d_nodes[0].id;
-        	var prop_array = [];
-        	for(var i = 0; i < d_nodes.length;i++ ){
-        		nodes.add(d_nodes[i]);
-        		if(prop_array.includes(d_nodes[i].group) || d_nodes[i].id == input.root){
-        			continue;
-        			
-        		}else{
-        			prop_array.push(d_nodes[i].group);
-        			colors.push(d_nodes[i].color);
-        		}
-        	}
-        	input.properties = prop_array;
-        	for(var i = 0; i < d_edges.length;i++ ){
-        		edges.add(d_edges[i]);
-        	}
-        	
-			searchParams = new URLSearchParams(window.location.search);
-			//console.log(JSON.parse(atob(searchParams.get("nodes"))));
-			//console.log(JSON.parse(atob(searchParams.get("edges"))));
-                	
+        function read_link(input, nodes, edges, colors, element) {
+            param_nodes_set = true;
+
+            var d_nodes = JSON.parse(atob(searchParams.get("nodes")));
+            var d_edges = JSON.parse(atob(searchParams.get("edges")));
+
+            input.root = d_nodes[0].id;
+            var prop_array = [];
+            for (var i = 0; i < d_nodes.length; i++) {
+                nodes.add(d_nodes[i]);
+                if (prop_array.includes(d_nodes[i].group) || d_nodes[i].id == input.root) {
+                    continue;
+
+                } else {
+                    prop_array.push(d_nodes[i].group);
+                    colors.push(d_nodes[i].color);
+                }
+            }
+            input.properties = prop_array;
+            for (var i = 0; i < d_edges.length; i++) {
+                edges.add(d_edges[i]);
+            }
+
+            searchParams = new URLSearchParams(window.location.search);
+            //console.log(JSON.parse(atob(searchParams.get("nodes"))));
+            //console.log(JSON.parse(atob(searchParams.get("edges"))));
+
         }
-        $(".InteractiveSemanticGraph").each( function(index) {
+        $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-            	var defaultOptions = { "root":"", "properties":[], "permalink":false, "edit":false, "hint":false };
+                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
-            	if(this.innerHTML !== "") {//ToDo: use data attributes
-            		var userOptions = JSON.parse(this.innerHTML);	
-            	}
-                var input = {...defaultOptions, ...userOptions};
-            	input.depth = parseInt(input.depth);
+
+                if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
+                else if (this.innerText !== "") userOptions = JSON.parse(this.innerText); //Legacy support
+                var input = { ...defaultOptions, ...userOptions };
+                input.properties = [...new Set(input.properties)]; //remove duplicates
+                input.depth = parseInt(input.depth);
+                if (input.edit) mwjson.parser.init(); //start loading parser
                 // create an array with nodes
                 var nodes = new vis.DataSet([]);
                 // create an array with edges
@@ -63,27 +90,20 @@ $(document).ready(function() {
                 givenDiv.style.display = "inline-block";
                 var curr_element = this.innerHTML;
 
-		        searchParams = new URLSearchParams(window.location.search);
-		        if((searchParams.has('nodes') &&  !(searchParams.get('nodes') === "")) || input.data){
-		        	if(input.data){
-		        	input.data = input.data.replaceAll("&amp;", "&");
-		        	window.history.replaceState(null, document.title, input.data);}
-		        	searchParams = new URLSearchParams(window.location.search);
-		        	read_link(input, nodes, edges, colors, curr_element);
-		        }
-				//Function for random colors
-                var h = Math.random();
-                var golden = 0.618033988749895;
-
-                function randomHSL() {
-                    h += golden;
-                    h %= 1;
-                    return "hsla(" + (360 * h) + "," +
-                        "70%," +
-                        "80%,1)";
+                searchParams = new URLSearchParams(window.location.search);
+                if ((searchParams.has('nodes') && !(searchParams.get('nodes') === "")) || input.data) {
+                    if (input.data) {
+                        input.data = input.data.replaceAll("&amp;", "&");
+                        window.history.replaceState(null, document.title, input.data);
+                    }
+                    searchParams = new URLSearchParams(window.location.search);
+                    read_link(input, nodes, edges, colors, curr_element);
                 }
+
+                randomColor = new isg.util.Color();
+
                 for (var i = 0; i < input.properties.length; i++) {
-                    colors.push(randomHSL());
+                    colors.push(randomColor.randomHSL());
                 }
 
                 function isLabelSet(id) {
@@ -91,31 +111,12 @@ $(document).ready(function() {
                     if (node === null) return false;
                     else return id;
                 }
-				if(param_nodes_set === false){
-                	nodes.add({
-                    id: input.root,
-                    label: input.root, //todo: query display title
-                    color: '#6dbfa9'
-                	});
-				}
-                //Creates API query Url with the given root and properties
-                function createUrl(root, properties) {
-                	if (properties[0] === "-Category") properties[0] = "Category";
-                	else if (root.startsWith("Category:")) root = ":" + root; //[[Category:X]] queries pages within this category, [[:Category:X]] the category itself
-                    var url = `/w/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
-                    var propertiesVar = '';
-                    for (var i = 0; i < properties.length; i++) {
-                        propertiesVar += '|?' + encodeURIComponent(properties[i]) + "=" + encodeURIComponent(properties[i]); //explicit label overwrites property display title. ToDo: extrakt label in result and get corresponding printout
-                        propertiesVar += '|?' + encodeURIComponent(properties[i] + ".Display title of") + "=" + encodeURIComponent(properties[i] + ".Display title of"); //explicit query for display title due to slow update of the displaytitle page field 
-                    }
-                    url = url + propertiesVar + '&format=json';
-                    return url;
-                }
-
-                function uuidv4() {
-                    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-                        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-                    );
+                if (param_nodes_set === false) {
+                    nodes.add({
+                        id: input.root,
+                        label: input.root, //todo: query display title
+                        color: '#6dbfa9'
+                    });
                 }
 
                 //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
@@ -123,17 +124,18 @@ $(document).ready(function() {
                 var first_call = true;
                 function fetchData(root, properties, nodeID, setGroup, setColor) {
                     if (nodes.get(root).isLiteral) return false; //don't query on literals
-                    fetch(createUrl(root, properties))
+                    fetch(isg.util.getSmwQuery(root, properties))
                         .then(response => response.json())
                         .then(data => {
                             if (!nodeID && root) { //first query on root node
                                 var rootNode = nodes.get(root);
                                 rootNode.url = data.query.results[root].fullurl;
-                                if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
+                                if (data.query.results[root].printouts["Display title of"]) rootNode.label = data.query.results[root].printouts["Display title of"][0];
+                                else if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
                             }
 
                             for (var i = 0; i < properties.length; i++) {
-
+                                var labelOffset = 0;
                                 for (var j = 0; j < data.query.results[root].printouts[properties[i]].length; j++) {
 
                                     //define colors
@@ -145,30 +147,47 @@ $(document).ready(function() {
                                         colors[i] = legendColors[properties[i]];
                                     }
                                     //define id and label. use displaytitle if available. Use string representation of non-page properties
-                                    var id = uuidv4(); //default: UUID
+                                    var id = isg.util.uuidv4(); //default: UUID
                                     var label = "";
                                     var isLiteral = true;
+                                    var isNonExistingPage = false;
+                                    
                                     if (data.query.results[root].printouts[properties[i]][j].fulltext) {
                                         if (data.query.results[root].printouts[properties[i]][j].exists === "1") {
                                             id = data.query.results[root].printouts[properties[i]][j].fulltext; //use pagename as id for pages
-                                            isLiteral = false;
+                                            isLiteral = isNonExistingPage = false;
                                         }
-                                        else label = data.query.results[root].printouts[properties[i]][j].fulltext; //treat non existing pages as literals
+                                        else {
+                                            isNonExistingPage = true;
+                                            labelOffset += 1; //skip 'gap' in Display title of result array
+                                            if (input.treat_non_existing_pages_as_literals) {
+                                                label = data.query.results[root].printouts[properties[i]][j].fulltext; //treat non existing pages as literals 
+                                            }
+                                            else {
+                                                id = data.query.results[root].printouts[properties[i]][j].fulltext; //use pagename as id for pages
+                                            }
+                                        }
                                     }
                                     else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
-                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp*1000).toISOString(); //datetime
+                                    else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp * 1000).toISOString(); //datetime
                                     else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
-                                    if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
-                                    if (data.query.results[root].printouts[properties[i] + ".Display title of"][j]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j]; //explicit use property display title due to slow update of the displaytitle page field
+
+                                    //if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]; //explicit use label in user language
+                                    if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".Display title of"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".Display title of"][j+labelOffset]; //explicit use property display title due to slow update of the displaytitle page field
+                                    else if (data.query.results[root].printouts[properties[i]][j].displaytitle) label = data.query.results[root].printouts[properties[i]][j].displaytitle; //use display title of pages
                                     if (label === "") label = id; //default label is id
                                     var color = colors[i];
+                                    if (isNonExistingPage) color = setColor = "##D3D3D3";
                                     if (isLiteral) color = setColor = "#FFFFFF";
-                                    var shape = image = "undefined";
-                                    if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif")) ) {
-                                        image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:","")}&width=200&height=200`;
+                                    var shape = image = undefined;
+                                    if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif"))) {
+                                        image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:", "")}&width=200&height=200`;
                                         shape = "image";
                                         label = "";
                                     }
+                                    var edgeLabel = properties[i];
+                                    //if (!input.edge_labels) edgeLabel = undefined; //some features depend on the labels, so we can't simple remove them
+
                                     if (isLabelSet(id) === false) { //test if node with id exists
                                         if (setGroup && setColor) {
                                             nodes.add({
@@ -202,7 +221,7 @@ $(document).ready(function() {
                                             edges.add({
                                                 from: nodeID,
                                                 to: id,
-                                                label: properties[i],
+                                                label: edgeLabel,
                                                 color: colors[i],
                                                 group: properties[i]
                                             });
@@ -210,7 +229,7 @@ $(document).ready(function() {
                                             edges.add({
                                                 from: input.root,
                                                 to: id,
-                                                label: properties[i],
+                                                label: edgeLabel,
                                                 color: colors[i],
                                                 group: properties[i]
                                             });
@@ -219,7 +238,7 @@ $(document).ready(function() {
                                         edges.add({
                                             from: nodeID,
                                             to: isLabelSet(id),
-                                            label: properties[i],
+                                            label: edgeLabel,
                                             color: setColor,
                                             group: properties[i]
                                         });
@@ -230,17 +249,18 @@ $(document).ready(function() {
                             network.body.emitter.emit('_dataChanged');
                             network.redraw();
                             create_link();
-                            if(first_call && input.depth){
-                            	var first_nodes = nodes.getIds()
-                            	first_nodes = first_nodes.slice(1);
-                            	getStartIds(first_nodes); 
-                            	first_call = false;
+                            if (first_call && input.depth) {
+                                var first_nodes = nodes.getIds()
+                                first_nodes = first_nodes.slice(1);
+                                getStartIds(first_nodes);
+                                first_call = false;
                             }
                             return true;
                         });
                 }
-                if(param_nodes_set === false){
-                fetchData(input.root, input.properties);}
+                if (param_nodes_set === false) {
+                    fetchData(input.root, input.properties);
+                }
                 // create a network
                 var container = this; //document.getElementById("InteractiveSemanticGraph");
                 var data = {
@@ -256,19 +276,19 @@ $(document).ready(function() {
                     manipulation: {
                         enabled: input.edit,
                         editEdge: false,
-                        deleteNode: function(data, callback) {
+                        deleteNode: function (data, callback) {
                             deleteSelectedNode(data, callback)
                         }.bind(this),
-                        deleteEdge: function(data, callback) {
+                        deleteEdge: function (data, callback) {
                             deleteSelectedEdge(data, callback)
                         }.bind(this),
-                        addNode: function(data, callback) {
+                        addNode: function (data, callback) {
                             // filling in the popup DOM elements
                             document.getElementById("node-operation").innerText = "Add Node";
                             dragElement(document.getElementById("node-popUp"));
                             editNode(data, clearNodePopUp, callback);
                         },
-                        addEdge: function(data, callback) {
+                        addEdge: function (data, callback) {
                             if (data.from == data.to) {
                                 var r = confirm("Do you want to connect the node to itself?");
                                 if (r != true) {
@@ -287,7 +307,8 @@ $(document).ready(function() {
                                 enabled: true
                             },
                             //from:{enabled: true}
-                        }
+                        },
+                        font: {size: input.edge_labels? 14 : 0} //optional hide labels by set font size to zero
                     },
                     groups: {
                         useDefaultGroups: false
@@ -307,6 +328,9 @@ $(document).ready(function() {
                         maxVelocity: 5
                     },
                 };
+                //Allow custom visnetwork options
+                options = { ...options, ...input.visnetwork };
+
                 //Creates groups in the options and sets them all to hidden:false.
                 for (var i = 0; i < input.properties.length; i++) {
                     options.groups[input.properties[i]] = {
@@ -315,91 +339,84 @@ $(document).ready(function() {
                 }
                 var network = new vis.Network(container, data, options);
                 var nodes_opened = [];
-                
+
                 /*function isFetched(node){
-                	return new Promise( function(resolve){
-                					setTimeout(() => {
-											          fetchData(node, input.properties, node);console.log(nodes.getIds());
-											          }, 2000)
-                					//console.log(node);
-									resolve(true);
+                    return new Promise( function(resolve){
+                                    setTimeout(() => {
+                                                      fetchData(node, input.properties, node);console.log(nodes.getIds());
+                                                      }, 2000)
+                                    //console.log(node);
+                                    resolve(true);
                 });}*/
-                
+
                 nodes_opened.push(input.root);
                 var loop_counter = 0;
-                async function getStartIds(node){
-                	
-                	//console.log(node);
-                		var start_nodes = node;//network.getConnectedNodes(node);
-                		//console.log(start_nodes)
-                	//nodes_opened.push(start_nodes);
-                	for(var i = 0; i < start_nodes.length; i++){
-                		if(nodes_opened.includes(start_nodes[i])){/*console.log(start_nodes[i]);*/ continue;}
-                		nodes_opened.push(start_nodes[i]);
-                		/*await isFetched(start_nodes[i]).then(function(response){
-                			console.log(response);
-                		});*/
-                		fetchData(start_nodes[i], input.properties, start_nodes[i]);
-                		//console.log(fetched);
-                		
-                	}
-                	//console.log(nodes_opened);
-                	setTimeout(() => {
-                				if(loop_counter == input.depth-1)return;
-                				loop_counter++;
-					          var new_nodes_loop = nodes.getIds();
-					          //console.log(new_nodes_loop);
-					          getStartIds(new_nodes_loop);
-					          }, 300)
+                async function getStartIds(node) {
 
-                	//getStartIds(nodes.getIds());
-                	//console.log(nodes.getIds());
-                	//getStartIds(start_nodes[1]);
-                	
+                    //console.log(node);
+                    var start_nodes = node;//network.getConnectedNodes(node);
+                    //console.log(start_nodes)
+                    //nodes_opened.push(start_nodes);
+                    for (var i = 0; i < start_nodes.length; i++) {
+                        if (nodes_opened.includes(start_nodes[i])) {/*console.log(start_nodes[i]);*/ continue; }
+                        nodes_opened.push(start_nodes[i]);
+                        /*await isFetched(start_nodes[i]).then(function(response){
+                            console.log(response);
+                        });*/
+                        fetchData(start_nodes[i], input.properties, start_nodes[i]);
+                        //console.log(fetched);
+
+                    }
+                    //console.log(nodes_opened);
+                    setTimeout(() => {
+                        if (loop_counter == input.depth - 1) return;
+                        loop_counter++;
+                        var new_nodes_loop = nodes.getIds();
+                        //console.log(new_nodes_loop);
+                        getStartIds(new_nodes_loop);
+                    }, 300)
+
+                    //getStartIds(nodes.getIds());
+                    //console.log(nodes.getIds());
+                    //getStartIds(start_nodes[1]);
+
                 }
-				//The function getAllEdgesBetween() returns all edges between two nodes
+                //The function getAllEdgesBetween() returns all edges between two nodes
                 function getAllEdgesBetween(node1, node2) {
-                    return edges.get().filter(function(edge) {
+                    return edges.get().filter(function (edge) {
                         return (edge.from === node1 && edge.to === node2) || (edge.from === node2 && edge.to === node1);
                     });
                 }
-                
+
                 //Cartesian Product of arrays
                 function cartesianProduct(arr) {
-				    return arr.reduce(function(a,b){
-				        return a.map(function(x){
-				            return b.map(function(y){
-				                return x.concat([y]);
-				            })
-				        }).reduce(function(a,b){ return a.concat(b) },[])
-				    }, [[]])
-				}
-				//Cartesian Product of given arrays
+                    return arr.reduce(function (a, b) {
+                        return a.map(function (x) {
+                            return b.map(function (y) {
+                                return x.concat([y]);
+                            })
+                        }).reduce(function (a, b) { return a.concat(b) }, [])
+                    }, [[]])
+                }
+                //Cartesian Product of given arrays
                 function getAllCombs(arrays) {
-                	var allCombs = cartesianProduct(arrays);
+                    var allCombs = cartesianProduct(arrays);
                     return allCombs;
                 }
-				//Gets Path array with nodes, returns Cartesian Product  of edges
+                //Gets Path array with nodes, returns Cartesian Product  of edges
                 function getEdgePathsForPath(path) {
                     var arraysOfEdgesForNodeInPath = [];
                     for (var i = 1; i < path.length; i++) {
                         var edgesBetween = getAllEdgesBetween(path[i - 1], path[i]);
                         var localedgesBetween = edgesBetween.slice();
-                        
+
                         arraysOfEdgesForNodeInPath.push(localedgesBetween);
                     }
                     var allEdgePaths = getAllCombs(arraysOfEdgesForNodeInPath);
                     return allEdgePaths;
                 }
-				//Given Label is reversed with "-" or "-" is removed
-                function reverseLabel(label) {
-                    if (label[0] == "-") {
-                        return label.substring(1);
-                    } else {
-                        return "-" + label;
-                    }
-                }
-				//Gets Path array with nodes, returns all possible edge paths
+
+                //Gets Path array with nodes, returns all possible edge paths
                 function getEdgeLabelStringsForPath(path) {
                     var allEdgePaths = getEdgePathsForPath(path);
                     var allStrings = new Array(allEdgePaths.length);
@@ -411,7 +428,7 @@ $(document).ready(function() {
                             var nodeId1 = path[j];
                             var nodeId2 = path[j + 1];
                             if (edge.to == nodeId1 && edge.from == nodeId2) {
-                                label = reverseLabel(label);
+                                label = isg.util.reverseLabel(label);
                             }
                             if (j == (allEdgePaths[i].length - 1)) {
                                 s = s + label;
@@ -423,7 +440,7 @@ $(document).ready(function() {
                     }
                     return allStrings;
                 }
-				//Gets Path arrays with nodes, returns all possible edge paths
+                //Gets Path arrays with nodes, returns all possible edge paths
                 function getAllStringsForAllPaths(paths) {
                     var arrayOfAllStrings = [];
                     for (var i = 0; i < paths.length; i++) {
@@ -433,15 +450,8 @@ $(document).ready(function() {
                     }
                     return arrayOfAllStrings;
                 }
-				//Removes the given value from the given array
-                function removeItem(arr, value) {
-                    var index = arr.indexOf(value);
-                    if (index > -1) {
-                        arr.splice(index, 1);
-                    }
-                    return arr;
-                }
-				//Returns all paths between startNode and endNode
+
+                //Returns all paths between startNode and endNode
                 function findAllPaths(startNode, endNode) {
                     var visitedNodes = [];
                     var currentPath = [];
@@ -449,7 +459,7 @@ $(document).ready(function() {
                     dfs(startNode, endNode, currentPath, allPaths, visitedNodes);
                     return allPaths;
                 }
-				//Algorithm to search for all paths between two nodes
+                //Algorithm to search for all paths between two nodes
                 function dfs(start, end, currentPath, allPaths, visitedNodes) {
                     if (visitedNodes.includes(start)) return;
                     visitedNodes.push(start);
@@ -457,7 +467,7 @@ $(document).ready(function() {
                     if (start == end) {
                         var localCurrentPath = currentPath.slice();
                         allPaths.push(localCurrentPath);
-                        removeItem(visitedNodes, start);
+                        isg.util.removeItemFromArray(visitedNodes, start);
                         currentPath.pop();
                         return;
                     }
@@ -467,7 +477,7 @@ $(document).ready(function() {
                         dfs(current, end, currentPath, allPaths, visitedNodes);
                     }
                     currentPath.pop();
-                    removeItem(visitedNodes, start);
+                    isg.util.removeItemFromArray(visitedNodes, start);
                 }
                 //Algorithm that gets all nodes that are reachable from the given node in the graph 
                 function getAllReachableNodesTo(nodeId, excludeIds, reachableNodes) {
@@ -482,11 +492,11 @@ $(document).ready(function() {
                         //reachableNodes.push(children[i]);
                     }
                 }
-				//This function deletes all children of a given node.
+                //This function deletes all children of a given node.
                 function deleteNodesChildren(nodeId, deleteEdge) {
                     var excludedIds = [];
                     if (deleteEdge === true) {
-                        console.log("deleteEdge true")
+                        //console.log("deleteEdge true")
                     } else {
                         excludedIds.push(nodeId);
                     }
@@ -508,10 +518,10 @@ $(document).ready(function() {
                     }
                     return nodesToDelete;
                 }
-				//Deletes all edges from given node
+                //Deletes all edges from given node
                 function deleteEdges(nodeID) {
                     var fromEdges = edges.get({
-                        filter: function(item) {
+                        filter: function (item) {
                             return item.from == nodeID;
                         }
                     });
@@ -523,8 +533,8 @@ $(document).ready(function() {
                 var tip = '<p><strong>Hinweis:</strong> Um sich einen Pfad zwischen zwei Knoten ausgeben zu lassen, <em>Strg</em> gedrückt halten und die gewünschten zwei Knoten mit der <em>linken Maustaste</em> anklicken. </p>'
                 if (input.hint) this.insertAdjacentHTML('afterbegin', tip);
                 //Ctrl and click on two nodes, puts out all possible paths between the two nodes under the tip
-                network.on("click", function(params) {
-                	mw.hook( 'isg.node.clicked' ).fire( nodes.get(params.nodes[0]) ); //fire event
+                network.on("click", function (params) {
+                    mw.hook('isg.node.clicked').fire(nodes.get(params.nodes[0])); //fire event
                     if (params.nodes[0] && params.event.srcEvent.ctrlKey) {
                         if (nodesClicked.length < 2) {
                             nodesClicked.push(params.nodes[0]);
@@ -579,16 +589,16 @@ $(document).ready(function() {
                     }
                     pathId++;
                 });
-                $(document).keyup(function(event) {
+                $(document).keyup(function (event) {
                     if (!event.ctrlKey) {
                         nodesClicked = [];
                     }
                 });
                 var contextCreatedProps = [];
-                
-                network.on("doubleClick", function(params) {
+
+                network.on("doubleClick", function (params) {
                     if (params.nodes[0]) {
-                    	//Checks if all node children are created from context menu or manually, if so it creates nodes for before defined properties else it deletes all children
+                        //Checks if all node children are created from context menu or manually, if so it creates nodes for before defined properties else it deletes all children
                         var conManNodes = network.getConnectedNodes(params.nodes[0], 'to');
                         var onlyConManNodes = true;
                         for (var i = 0; i < conManNodes.length; i++) {
@@ -644,11 +654,11 @@ $(document).ready(function() {
                     node.hidden = true;
                     var connectedEdgesIds = network.getConnectedEdges(nodeId);
                     var connectedEdges = edges.get(connectedEdgesIds);
-                    connectedEdges.forEach(function(edge) {
+                    connectedEdges.forEach(function (edge) {
                         if (edge.hidden) return; //don't follow hidden edges
                         var connectedNodesIds = network.getConnectedNodes(edge.id);
                         var connectedNodes = nodes.get(connectedNodesIds);
-                        connectedNodes.forEach(function(connectedNode) {
+                        connectedNodes.forEach(function (connectedNode) {
                             if (connectedNode.id == nodeId) return; //prevent self evaluation
                             if (setNodeVisibilityByVisiblePath(connectedNode.id, rootNodeId)) {
                                 node.hidden = false; //set node visible, if at least one connected node is visible
@@ -671,21 +681,21 @@ $(document).ready(function() {
                         if (options.groups[legendGroup].hidden) this.parentNode.childNodes[1].style.background = '#FFFFFF';
                         else this.parentNode.childNodes[1].style.background = '#DEF';
                         //update all edges
-                        edges.forEach(function(edge) {
+                        edges.forEach(function (edge) {
                             edge.hidden = options.groups[edge.label].hidden;
                             edge.physics = !edge.hidden;
                         });
                         //reset nodes
-                        nodes.forEach(function(node) {
+                        nodes.forEach(function (node) {
                             node.hidden = false;
                             node.physics = !node.hidden;
                             node.visited = false;
                         });
                         //check each node
-                        nodes.forEach(function(node) {
+                        nodes.forEach(function (node) {
                             setNodeVisibilityByVisiblePath(node.id, input.root)
                             //reset visited state. Todo: Reuse visited nodes between runs
-                            nodes.forEach(function(node) {
+                            nodes.forEach(function (node) {
                                 node.visited = false;
                             });
                         });
@@ -693,7 +703,7 @@ $(document).ready(function() {
                     network.setOptions(options);
                     network.body.emitter.emit('_dataChanged');
                     network.redraw();
-                    var allFalse = Object.keys(options.groups).every(function(k) {
+                    var allFalse = Object.keys(options.groups).every(function (k) {
                         if (k === 'useDefaultGroups') {
                             return true
                         }
@@ -745,35 +755,35 @@ $(document).ready(function() {
                 objColors = {};
                 var start = 0;
                 //On a node right click it puts out all properties of the clicked node and a link to the node wiki-page
-                network.on("oncontext", function(params) {
+                network.on("oncontext", function (params) {
                     params.event.preventDefault();
                     var timeNow = Date.now();
                     var timeDiff = timeNow - start
                     if (timeDiff > 300) {
                         start = Date.now();
-                        console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
+                        //console.log(nodes.get(network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
                         //console.log(edges.get(network.getEdgeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
-                        $('.custom-menu').each(function(index) {
+                        $('.custom-menu').each(function (index) {
                             while (this.lastElementChild) {
                                 this.removeChild(this.lastElementChild);
                             }
                         });
                         if (!(network.getEdgeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            }) && network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            }))) {
+                            x: params.pointer.DOM.x,
+                            y: params.pointer.DOM.y
+                        }) && network.getNodeAt({
+                            x: params.pointer.DOM.x,
+                            y: params.pointer.DOM.y
+                        }))) {
                             if (edges.get(network.getEdgeAt({
-                                    x: params.pointer.DOM.x,
-                                    y: params.pointer.DOM.y
-                                })).from) {
+                                x: params.pointer.DOM.x,
+                                y: params.pointer.DOM.y
+                            })).from) {
                                 params.event.preventDefault();
                                 if (edges.get(network.getEdgeAt({
-                                        x: params.pointer.DOM.x,
-                                        y: params.pointer.DOM.y
-                                    })).label == 'Category') {
+                                    x: params.pointer.DOM.x,
+                                    y: params.pointer.DOM.y
+                                })).label == 'Category') {
                                     var li = document.createElement("li");
                                     li.innerHTML = '' + '\uD83D\uDD17' + ' ' + edges.get(network.getEdgeAt({
                                         x: params.pointer.DOM.x,
@@ -808,80 +818,30 @@ $(document).ready(function() {
                             }
                         }
                         if (network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            })) {
+                            x: params.pointer.DOM.x,
+                            y: params.pointer.DOM.y
+                        })) {
                             params.event.preventDefault();
                             const nodeID = nodes.get(network.getNodeAt({
                                 x: params.pointer.DOM.x,
                                 y: params.pointer.DOM.y
                             })).id;
-                            var subject = nodeID.split("#")[0];
-                            var subObject = "";
-                            if (nodeID.split("#")[1]) {
-                                subObject = nodeID.split("#")[1].replace(" ", "_");
+
+                            var selected_node = nodes.get(network.getNodeAt({
+                                x: params.pointer.DOM.x,
+                                y: params.pointer.DOM.y
+                            }));
+                            if (selected_node.url) {
+                                var li = document.createElement("li");
+                                li.innerHTML = '' + '\uD83D\uDD17' + ' ' + selected_node.label;
+                                li.addEventListener("click", function NewTab() {
+                                    window.open(selected_node.url);
+                                });
+                                ul.prepend(li);
                             }
-                            var namespace_id = 0;
-                            if (subject.split(":")[1]) {
-                            	const namespace = subject.split(":")[0];
-                            	subject = subject.split(":")[1];
-                            	namespace_id = mw.config.get('wgNamespaceIds')[namespace.replaceAll(" ","_").toLowerCase()];
-                            	//console.log(`Namespace ${namespace}, ID ${namespace_id}`);
-                            }
-                            
-                            //inverse properties are only available in html format
-                            const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":${namespace_id}, "type":"html"}&format=json`;
-                            fetch(query)
-                                .then(response => response.json())
-                                .then(data => {
-                                    var selected_node = nodes.get(network.getNodeAt({
-                                        x: params.pointer.DOM.x,
-                                        y: params.pointer.DOM.y
-                                    }));
-                                    if (selected_node.url) {
-                                        var li = document.createElement("li");
-                                        li.innerHTML = '' + '\uD83D\uDD17' + ' ' + selected_node.label;
-                                        li.addEventListener("click", function NewTab() {
-                                            window.open(selected_node.url);
-                                        });
-                                        ul.prepend(li);
-                                    }
-                                    var page_properties = [];
-                                    $html = $(data.query);
-                                    $html.find("div.smwb-propvalue").each(function() {
-                                        $prop = $(this).find("div.smwb-prophead a");
-                                        //var propName = $prop.text();
-                                        //var propName = $prop.attr('title').replace("Property:", "");
-                                        var propName = "";
-                                        if ($prop.attr('title') === "Special:Categories") propName += "Category";
-                                        else if ($prop.attr('title') === "Special:ListRedirects") return;
-                                        else if ($prop.attr('href')) propName += $prop.attr('href').split("Property:")[1].split("&")[0];
-                                        else return; //empty property
-                                        page_properties.push(propName);
-                                        //console.log(propName);
-                                        $(this).find("div.smwb-propval span.smwb-value").each(function() {
-                                            var value = $(this).find("a").attr("title");
-                                            //console.log("-> " + value);
-                                        });
-                                        create_link();
-                                    })
-                                    $html.find("div.smwb-ipropvalue").each(function() {
-                                        $prop = $(this).find("div.smwb-prophead a");
-                                        //var propName = $prop.text();
-                                        //var propName = $prop.attr('title').replace("Property:", "");
-                                        var propName = "-";
-                                        if ($prop.attr('title') === "Special:Categories") propName += "Category";
-                                        else if ($prop.attr('title') === "Special:ListRedirects") return;
-                                        else if ($prop.attr('href')) propName += $prop.attr('href').split("Property:")[1].split("&")[0];
-                                        else return; //empty property
-                                        page_properties.push(propName);
-                                        //console.log(propName);
-                                        $(this).find("div.smwb-propval span.smwb-ivalue").each(function() {
-                                            var value = $(this).find("a").attr("title");
-                                            //console.log("-> " + value);
-                                        });
-                                        create_link();
-                                    })
+
+                            mwjson.api.getSemanticProperties(nodeID)
+                            .then(page_properties => {
                                     for (var i = 0; i < page_properties.length; i++) {
                                         if (!page_properties[i].startsWith("_")) {
                                             var li = document.createElement("li");
@@ -890,29 +850,12 @@ $(document).ready(function() {
                                             ul.append(li);
                                         }
                                     }
-                                    /* old: use json result */
-                                    /*
-                        	var page_properties = data.query.data; //normal page
-                        	if (selected_node.id.includes('#')) { //subobject
-                        		for (var i = 0; i < data.query.sobj.length; i++) { 
-                        			if (data.query.sobj[i].subject.endsWith(selected_node.id.split('#').pop().replace(' ',''))){
-                        				page_properties = data.query.sobj[i].data
-                        				break;
-                        			}
-                        		}
-                        	}
-	                        for (var i = 0; i < page_properties.length; i++) {
-	                            if (!page_properties[i].property.startsWith("_")) {
-	                                 var li = document.createElement("li");
-	                                 li.dataset.action = page_properties[i].property.replaceAll('_',' ');
-	                                 li.innerHTML = page_properties[i].property.replaceAll('_',' ');
-	                                 ul.append(li);
-	                            }
-	                        }*/
-	                        		//On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
-                                    $(".custom-menu li").click(function() {
+                                    create_link();
+
+                                    //On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
+                                    $(".custom-menu li").click(function () {
                                         var clickedProperty = [$(this).attr("data-action")]
-                                        var clickedPropertyColor = randomHSL();
+                                        var clickedPropertyColor = randomColor.randomHSL();
                                         if (!(clickedProperty in legendColors)) {
                                             legendColors[clickedProperty] = clickedPropertyColor;
                                         } else {
@@ -924,18 +867,18 @@ $(document).ready(function() {
                                             objColors[clickedProperty] = clickedPropertyColor;
                                         }
                                         if (!objClickedProps[nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id]) {
+                                            x: params.pointer.DOM.x,
+                                            y: params.pointer.DOM.y
+                                        })).id]) {
                                             objClickedProps[nodes.get(network.getNodeAt({
                                                 x: params.pointer.DOM.x,
                                                 y: params.pointer.DOM.y
                                             })).id] = new Array();
                                         }
                                         if (!objClickedProps["" + nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id].includes(clickedProperty[0])) {
+                                            x: params.pointer.DOM.x,
+                                            y: params.pointer.DOM.y
+                                        })).id].includes(clickedProperty[0])) {
                                             fetchData(nodes.get(network.getNodeAt({
                                                 x: params.pointer.DOM.x,
                                                 y: params.pointer.DOM.y
@@ -948,7 +891,7 @@ $(document).ready(function() {
                                                 y: params.pointer.DOM.y
                                             })).id].push(clickedProperty[0]);
                                         }
-                                        if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/ )) {
+                                        if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/)) {
                                             contextCreatedProps.push(clickedProperty[0]);
                                             options.groups[clickedProperty] = {
                                                 hidden: false
@@ -992,17 +935,17 @@ $(document).ready(function() {
                     }
                 });
                 // If the document is clicked somewhere it hides the context menu
-                $(document).bind("mousedown", function(e) {
+                $(document).bind("mousedown", function (e) {
                     // If the clicked element is not the menu
                     if (!$(e.target).parents(".custom-menu").length > 0) {
                         // Hide it
                         $(".custom-menu").hide(100);
                     }
                 });
-				//Add Node popup
+                //Add Node popup
                 function editNode(data, cancelAction, callback) {
                     var newNodeActive = true;
-                    document.getElementById("node-label").value = data.label;
+                    //document.getElementById("node-label").value = data.label;
                     document.getElementById("node-saveButton").onclick = saveNodeData.bind(
                         this,
                         data,
@@ -1013,7 +956,7 @@ $(document).ready(function() {
                         callback
                     );
                     //document.getElementById("node-popUp")
-                    $('canvas').on('click', function(e) {
+                    $('canvas').on('click', function (e) {
                         if (newNodeActive === true) {
                             $("#node-popUp").css({
                                 top: e.pageY + "px",
@@ -1024,7 +967,7 @@ $(document).ready(function() {
                         newNodeActive = false;
                     });
                 }
-				
+
                 function clearNodePopUp() {
                     document.getElementById("node-saveButton").onclick = null;
                     document.getElementById("node-cancelButton").onclick = null;
@@ -1035,23 +978,34 @@ $(document).ready(function() {
                     clearNodePopUp();
                     callback(null);
                 }
-				//saveNodeData to the graph
+                //saveNodeData to the graph
                 function saveNodeData(data, callback) {
-                    data.label = document.getElementById("node-label").value;
-                    data.id = document.getElementById("node-label").value;
+                    const input_element = document.getElementById("node-label")
+                    data.label = input_element.value;
+                    if (input_element.dataset.result && input_element.dataset.result !== 'undefined'){ //existing page
+                        result = JSON.parse(input_element.dataset.result);
+                        data.id = result.fulltext;
+                        data.url = result.fullurl;
+                    }
+                    else {
+                        data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create a new UUID page in the Term namespace
+                        data.url = "/wiki/" + data.id;
+                    }
                     data.hidden = false;
                     data.physics = false;
-                    document.getElementById("node-label").value = "";
+                    console.log(data);
+                    input_element.value = "";
+                    input_element.dataset.result = "";
                     clearNodePopUp();
                     callback(data);
                     create_link();
                 }
-				//addEdge popup
+                //addEdge popup
                 function editEdgeWithoutDrag(data, callback) {
                     var newEdgeActive = true;
                     // filling in the popup DOM elements
-                    document.getElementById("edge-label").value = data.label;
-                    
+                    //document.getElementById("edge-label").value = data.label;
+
                     document.getElementById("edge-saveButton").onclick = saveEdgeData.bind(
                         this,
                         data,
@@ -1061,7 +1015,7 @@ $(document).ready(function() {
                         this,
                         callback
                     );
-                    $('canvas').on('click', function(e) {
+                    $('canvas').on('click', function (e) {
                         if (newEdgeActive === true) {
                             $("#edge-popUp").css({
                                 top: e.pageY + "px",
@@ -1085,58 +1039,9 @@ $(document).ready(function() {
                     callback(null);
                 }
 
-                function isLabelReversed(label) {
-                    if (label[0] == "-") {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                var pageBool;
-                //Checks if page exists in the wiki
-                async function pageExists(id) {
-                    await fetch('/w/api.php?action=parse&page=' + id + '&prop=wikitext&format=json')
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.error) {
-                                pageBool = false;
-                            } else {
-                                pageBool = true;
-                            }
-                        })
-                    return pageBool;
-                }
-                var wikiText = "";
-                var semantic = "";
-                //Splits Wikitext and Semantic/Element or Semantic/Link
-                async function editWikiText(node) {
-                    await fetch('/w/api.php?action=parse&page=' + node + '&prop=wikitext&format=json')
-                        .then(response => response.json())
-                        .then(data => {
-                            wikiText = data.parse.wikitext['*'];
-                            semantic = "";
-                            if (wikiText.search(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                //var edgeStringFound = wikiText.search(re) >= 0;
-                                const found = wikiText.match(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\})/g);
-                                var newWikiText = wikiText;
-                                for (var i = 0; i < found.length; i++) {
-                                    if (i == found.length - 1) {
-                                        semantic += found[i];
-                                        newWikiText = newWikiText.replace(/(\{\{Semantic\/[^}]*[\r\n]*\}[\r\n]*\}[\r\n]*\}[\r\n]*\})/g, "");
-                                        newWikiText = newWikiText.replace(/(\{\{Semantic\/Link[^}]*[\r\n]*\}[\r\n]*\})/g, "");
-                                    } else {
-                                        semantic += found[i];
-                                        newWikiText = newWikiText.replace(found[i], "");
-                                    }
-                                }
-                                wikiText = newWikiText;
-                            }
-                        });
-                    return [semantic, wikiText];
-                }
                 //Save button on create edge popup
                 async function saveEdgeData(data, callback) {
-                	//Sets various options to the nodes that the edge gets connected
+                    //Sets various options to the nodes that the edge gets connected
                     if (typeof data.to === "object") data.to = data.to.id;
                     if (typeof data.from === "object") data.from = data.from.id;
                     data.label = document.getElementById("edge-label").value;
@@ -1160,7 +1065,7 @@ $(document).ready(function() {
                     if (legendColors[data.label]) {
                         data.color = legendColors[data.label];
                     } else {
-                        data.color = randomHSL();
+                        data.color = randomColor.randomHSL();
                     }
                     if (!toNode.color) {
                         toNode.color = data.color;
@@ -1202,111 +1107,80 @@ $(document).ready(function() {
                         legendColors[data.label] = data.color;
                     }
                     //Creates new wikitext that will be saved after the save button is clicked
-                    if (isLabelReversed(data.label)) {
-                        if (await pageExists(fromNode.id) === false) {
-                            if (!(newNodes[fromNode.id])) {
-                                newNodes[fromNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + fromNode.label +
-                                    '|description=test' +
-                                    '|relations=';
-                            }
-                        }
-                        if (await pageExists(toNode.id) === true) {
-                            var splitWikiText = await editWikiText(toNode.id);
-                            if (editNodes[toNode.id]) {
-                                editNodes[toNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + reverseLabel(data.label) +
-                                    '|value=' + fromNode.id +
-                                    '}}' + '';
-                            } else {
-                                if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                    editNodes[toNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
-                                        '|property=' + reverseLabel(data.label) +
-                                        '|value=' + fromNode.id +
-                                        '}}' + '';
-                                } else {
-                                    editNodes[toNode.id] = splitWikiText[1] + '{{Semantic/Element' +
-                                        '|label=' + toNode.label +
-                                        '|description=test' +
-                                        '|relations=' +
-                                        '{{Semantic/Link' +
-                                        '|property=' + reverseLabel(data.label) +
-                                        '|value=' + fromNode.id +
-                                        '}}' + '' + splitWikiText[0];
+                    var sub = fromNode;
+                    var obj = toNode;
+                    editTargetNodes.push(obj.id);
+                    var property = data.label;
+                    if (isg.util.isLabelReversed(data.label)) { //reverseOrder
+                        sub = toNode;
+                        obj = fromNode;
+                        property = reverseLabel(property)
+                    }
+                    if (!editNodes[obj.id]) { //object page not handled yet
+                        var page = await mwjson.api.getPage(obj.id);
+                        if (!page.exists) { //create page with default content
+                            page.title = obj.id;
+                            page.dict = [{
+                                'OslTemplate:KB/Term': {
+                                    'label': obj.label,
+                                    'label_lang_code': 'en',
+                                    'description': "",
+                                    'relations': []
                                 }
                             }
-                        } else {
-                            if (newNodes[toNode.id]) {
-                                newNodes[toNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + reverseLabel(data.label) +
-                                    '|value=' + fromNode.id +
-                                    '}}' + '';
-                            } else {
-                                newNodes[toNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + toNode.label +
-                                    '|description=test' +
-                                    '|relations={{Semantic/Link' +
-                                    '|property=' + reverseLabel(data.label) +
-                                    '|value=' + fromNode.id +
-                                    '}}' +
-                                    '';
-                            }
-                        }
-                    } else {
-                        if (await pageExists(toNode.id) === false) {
-                            if (!(newNodes[toNode.id])) {
-                                newNodes[toNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + toNode.label +
-                                    '|description=test' +
-                                    '|relations=';
-                            }
-                        }
-                        if (await pageExists(fromNode.id) === true) {
-                            var splitWikiText = await editWikiText(fromNode.id);
-                            if (editNodes[fromNode.id]) {
-                                editNodes[fromNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + data.label +
-                                    '|value=' + toNode.id +
-                                    '}}' + '';
-                            } else {
-                                if (splitWikiText[0].search(/(\{\{Semantic\/Element[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                                    editNodes[fromNode.id] = splitWikiText[1] + splitWikiText[0] + '{{Semantic/Link' +
-                                        '|property=' + data.label +
-                                        '|value=' + toNode.id +
-                                        '}}' + '';
-                                } else {
-                                    editNodes[fromNode.id] = splitWikiText[1] + '{{Semantic/Element' +
-                                        '|label=' + fromNode.label +
-                                        '|description=test' +
-                                        '|relations=' +
-                                        '{{Semantic/Link' +
-                                        '|property=' + data.label +
-                                        '|value=' + toNode.id +
-                                        '}}' + '' + splitWikiText[0];
-                                }
-                            }
-                        } else {
-                            if (newNodes[fromNode.id]) {
-                                newNodes[fromNode.id] += '' + '{{Semantic/Link' +
-                                    '|property=' + data.label +
-                                    '|value=' + toNode.id +
-                                    '}}' + '';
-                            } else {
-                                newNodes[fromNode.id] = '' + '{{Semantic/Element' +
-                                    '|label=' + fromNode.label +
-                                    '|description=test' +
-                                    '|relations={{Semantic/Link' +
-                                    '|property=' + data.label +
-                                    '|value=' + toNode.id +
-                                    '}}' +
-                                    '';
-                            }
+                                , "\n=Details=\n\n",
+                            { 'OslTemplate:KB/Term/Footer': {} }
+                            ];
+                        editNodes[obj.id] = page; //store page state
                         }
                     }
-                    //console.log(toNode);
-                    //console.log(fromNode);
+                    var page = undefined;
+                    if (!editNodes[sub.id]) { //subject page not handled yet
+                        page = await mwjson.api.getPage(sub.id);
+                        if (page.exists) {
+                            await mwjson.parser.init();
+                            mwjson.parser.parsePage(page);
+                            if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
+                                //there is already a KB/Term Template
+                            } else {
+                                console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                                mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
+                                    'label': sub.label,
+                                    'label_lang_code': 'en',
+                                    'description': "",
+                                    'relations': []
+                                }
+                                );
+                            }
+                        }
+                        else { //create page with default content
+                            page.title = sub.id;
+                            page.dict = [{
+                                'OslTemplate:KB/Term': {
+                                    'label': sub.label,
+                                    'label_lang_code': 'en',
+                                    'description': "",
+                                    'relations': []
+                                }
+                            },
+                                "\n=Details=\n\n",
+                            { 'OslTemplate:KB/Term/Footer': {} }
+                            ];
+                        }
+                        editNodes[sub.id] = page; //store page state    
+                    }
+                    else page = editNodes[sub.id]; //use stored state
+                    mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                        'OslTemplate:KB/Relation': {
+                            'property': property,
+                            'value': obj.id
+                        }
+                    });
+                    editNodes[sub.id] = page; //update stored page state    
+                    
+                    //console.log(sub);
+                    //console.log(obj);
                     //console.log(editNodes);
-                    //console.log(newNodes);
                     clearEdgePopUp();
                     callback(data);
                     network.setOptions(options);
@@ -1321,96 +1195,97 @@ $(document).ready(function() {
                 saveBtn.style.width = "auto";
                 saveBtn.style.height = "auto";
                 if (input.edit) givenDiv.appendChild(saveBtn);
-                
+
                 searchParams = new URLSearchParams(window.location.search);
-				var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
-				
+                var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
+
 
                 var copy_button = document.createElement("button");
                 copy_button.addEventListener("click", copy_link_data);
                 copy_button.innerHTML = "Copy permalink";
                 copy_button.style.width = "auto";
                 copy_button.style.height = "auto";
-                if(requested || input.permalink === "true" || searchParams.has('nodes')){
-                givenDiv.appendChild(copy_button);
+                if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                    givenDiv.appendChild(copy_button);
                 }
-                
-            	function copy_link_data() {
-            	  searchParams = new URLSearchParams(window.location.search);
-				  // variable content to be copied
-				  var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
-				  // create an input element
-				  let input = document.createElement('input');
-				  // setting it's type to be text
-				  input.setAttribute('type', 'text');
-				  // setting the input value to equal to the text we are copying
-				  input.value = copyText;
-				  // appending it to the document
-				  document.body.appendChild(input);
-				  // calling the select, to select the text displayed
-				  // if it's not in the document we won't be able to
-				  input.select();
-				  // calling the copy command
-				  document.execCommand("copy");
-				  // removing the input from the document
-				  document.body.removeChild(input)
-				}
-				
 
-                function create_link(){
-                	
-                	searchParams = new URLSearchParams(window.location.search);
-					var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
-                	
-            		if(requested || input.permalink === "true" || searchParams.has('nodes')){
-            		if(!searchParams.has('nodes')){
-            		window.history.replaceState(null, document.title, "?&nodes=&edges");}
-            		searchParams = new URLSearchParams(window.location.search);
-					var e_nodes = btoa(JSON.stringify(nodes.get()));
-					var e_edges = btoa(JSON.stringify(edges.get()));
-					
-					searchParams.set("nodes", "" + e_nodes);
-					searchParams.set("edges", "" + e_edges);
-					
-					
-					window.history.pushState({}, '', "?&" + searchParams);
-            		}
-					//window.location.search = searchParams.append('#', '42');
+                function copy_link_data() {
+                    searchParams = new URLSearchParams(window.location.search);
+                    // variable content to be copied
+                    var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
+                    // create an input element
+                    let input = document.createElement('input');
+                    // setting it's type to be text
+                    input.setAttribute('type', 'text');
+                    // setting the input value to equal to the text we are copying
+                    input.value = copyText;
+                    // appending it to the document
+                    document.body.appendChild(input);
+                    // calling the select, to select the text displayed
+                    // if it's not in the document we won't be able to
+                    input.select();
+                    // calling the copy command
+                    document.execCommand("copy");
+                    // removing the input from the document
+                    document.body.removeChild(input)
                 }
-                
-				
-				//Called on save button click. Creates new wiki pages or edits them with the created wiki text.
+
+
+                function create_link() {
+
+                    searchParams = new URLSearchParams(window.location.search);
+                    var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
+
+                    if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                        if (!searchParams.has('nodes')) {
+                            window.history.replaceState(null, document.title, "?&nodes=&edges");
+                        }
+                        searchParams = new URLSearchParams(window.location.search);
+                        var e_nodes = btoa(JSON.stringify(nodes.get()));
+                        var e_edges = btoa(JSON.stringify(edges.get()));
+
+                        searchParams.set("nodes", "" + e_nodes);
+                        searchParams.set("edges", "" + e_edges);
+
+
+                        window.history.pushState({}, '', "?&" + searchParams);
+                    }
+                    //window.location.search = searchParams.append('#', '42');
+                }
+
+
+                //Called on save button click. Creates new wiki pages or edits them with the created wiki text.
                 function saveGraphChanges() {
                     var alertString = "";
-                    OO.ui.confirm('Änderungen übernehmen?').done(async function(confirmed) {
+                    OO.ui.confirm('Submit changes?').done(async function (confirmed) {
                         if (confirmed) {
-                            for (const [key, value] of Object.entries(newNodes)) {
-                                var params = {
-                                        action: 'edit',
-                                        title: '' + key,
-                                        appendtext: '' + value + '}}',
-                                        format: 'json'
-                                    },
-                                    api = new mw.Api();
-                                await api.postWithToken('csrf', params).done(function(data) {
-                                    console.log(data);
-                                    alertString += "Seite " + key + " erstellt!\r\n"
+                            var promises = [];
+                            var error_occured = false;
+                            mw.notify('Do not close this window', {
+                                title: "Saving...",
+                                type: 'warn'
+                            });
+
+                            for (const [key, page] of Object.entries(editNodes)) {
+                                mwjson.parser.updateContent(page);
+                                promise = mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph");
+                                promises.push(promise);
+                                promise.then((page) => {
+                                    editNodes[key] = page;
+                                    alertString += "Page " + key + " edited!\r\n"
+                                    mwjson.api.purgePage(page.title).then(() => mwjson.api.purgePage(page.title)); //Double purge
+                                }, (error) => {
+                                    error_occured = true;
+                                    console.log(error);
+                                    mw.notify('An error occured while saving.', {
+                                        title: 'Error',
+                                        type: 'error'
+                                    });
                                 });
+                                
                             }
-                            for (const [key, value] of Object.entries(editNodes)) {
-                                var params = {
-                                        action: 'edit',
-                                        title: '' + key,
-                                        text: '' + value + '}}',
-                                        format: 'json'
-                                    },
-                                    api = new mw.Api();
-                                await api.postWithToken('csrf', params).done(function(data) {
-                                    console.log(data);
-                                    alertString += "Seite " + key + " bearbeitet!\r\n"
-                                });
-                            }
-                            for (const [key, value] of Object.entries(editDeletedEdges)) {
+                            //edges are edit on the subject page
+                            /*for (const [key, value] of Object.entries(editDeletedEdges)) {
                                 var params = {
                                         action: 'edit',
                                         title: '' + key,
@@ -1422,20 +1297,20 @@ $(document).ready(function() {
                                     console.log(data);
                                     alertString += "Auf der Seite " + key + " wurde ein Attribut gelöscht!\r\n"
                                 });
-                            }
+                            }*/
                             for (const [key, value] of Object.entries(editDeletedNodes)) {
                                 var params = {
-                                        action: 'delete',
-                                        title: '' + key,
-                                        format: 'json'
-                                    },
-                                    api = new mw.Api();
-                                await api.postWithToken('csrf', params).done(function(data) {
-                                    console.log(data);
+                                    action: 'delete',
+                                    title: '' + key,
+                                    format: 'json'
+                                },
+                                api = new mw.Api();
+                                await api.postWithToken('csrf', params).done(function (data) {
+                                    //console.log(data);
                                     alertString += "Seite " + key + " wurde gelöscht!\r\n"
                                 });
                             }
-                            // Example: Customize the displayed actions at the time the window is opened.
+                            /*// Example: Customize the displayed actions at the time the window is opened.
                             var messageDialog = new OO.ui.MessageDialog();
                             // Create and append a window manager.
                             var windowManager = new OO.ui.WindowManager();
@@ -1452,15 +1327,32 @@ $(document).ready(function() {
                                     label: 'Okay',
                                     flags: 'primary'
                                 }]
-                            });
+                            });*/
                             /*OO.ui.alert( "" + alertString ).done( function () {
                                 console.log( alertString );
                             } );*/
-                        } else {}
+
+                            //Notify user. 
+                            Promise.allSettled(promises).then(([result]) => {
+                                const _editTargetNodes = [...new Set(editTargetNodes)]; //remove duplicates
+                                _editTargetNodes.forEach((title) => {
+                                    mwjson.api.purgePage(title);
+                                });
+                                editTargetNodes = [];
+                                mw.notify('Saved', {
+                                    type: 'success'
+                                });
+                            });
+
+                            //cleanup
+                            editNodes = {};
+                            editDeletedNodes = {};
+
+                        } else { }
                     });
                     create_link();
                 }
-				//Deletes node in manipulation mode and the wiki page.
+                //Deletes node in manipulation mode and the wiki page.
                 function deleteSelectedNode(data, callback) {
                     deleteNodesChildren(data.nodes[0]);
                     nodes.remove(data.nodes[0]);
@@ -1482,7 +1374,6 @@ $(document).ready(function() {
                     callback();
                     document.querySelector('.vis-delete').remove();
                     editDeletedNodes["" + data.nodes[0]] = "";
-                    delete newNodes["" + data.nodes[0]];
                     delete editNodes["" + data.nodes[0]];
                     create_link();
                 }
@@ -1507,100 +1398,46 @@ $(document).ready(function() {
                             i--;
                         }
                     }
+                    var sub = edgeFromNode;
+                    var obj = edgeToNode;
+                    var property = edgeLabel[0];
                     if (edgeLabel[0] == "-") {
-                        if (await pageExists(edgeToNode) === true) {
-                            await fetch('/w/api.php?action=parse&page=' + edgeToNode + '&prop=wikitext&format=json')
-                                .then(response => response.json())
-                                .then(data => {
-                                    var wikiText = data.parse.wikitext['*'];
-                                    var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`
-                                    //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
-                                    var re = new RegExp(edgeString, "g");
-                                    var edgeStringFound = wikiText.search(re) >= 0;
-                                    if (edgeStringFound) {
-                                        if (editDeletedEdges["" + edgeToNode]) {
-                                            var newWikiText = editDeletedEdges["" + edgeToNode].replace(re, "");
-                                            editDeletedEdges["" + edgeToNode] = newWikiText;
-                                        } else {
-                                            var newWikiText = wikiText.replace(re, "");
-                                            editDeletedEdges["" + edgeToNode] = newWikiText;
-                                        }
-                                    }
-                                    if (newNodes["" + edgeToNode]) {
-                                        var newWikiText = newNodes["" + edgeToNode].replace(re, "");
-                                        newNodes["" + edgeToNode] = newWikiText;
-                                    }
-                                    if (editNodes["" + edgeToNode]) {
-                                        var newWikiText = editNodes["" + edgeToNode].replace(re, "");
-                                        editNodes["" + edgeToNode] = newWikiText;
-                                    }
-                                });
-                        } else {
-                            if (network.getConnectedNodes(edgeToNode).length == 0) {
-                                delete newNodes["" + edgeToNode];
-                            } else {
-                                var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + reverseLabel(edgeLabel) + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeFromNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
-                                var re = new RegExp(edgeString, "g");
-                                var wikiText = newNodes["" + edgeToNode];
-                                var newWikiText = wikiText.replace(re, "");
-                                newNodes["" + edgeToNode] = newWikiText;
-                            }
-                        }
+                        sub = edgeToNode;
+                        obj = edgeFromNode;
+                        property = isg.util.reverseLabel(property)
+                    }
+                    var page = {};
+                    if (editNodes[sub]) page = editNodes[sub];
+                    else page = await mwjson.api.getPage(sub);
+                    await mwjson.parser.init();
+                    if (page.exists) {
+                        mwjson.parser.parsePage(page);
+                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
+                        editNodes[sub] = page;
                     } else {
-                        if (await pageExists(edgeFromNode) === true) {
-                            await fetch('/w/api.php?action=parse&page=' + edgeFromNode + '&prop=wikitext&format=json')
-                                .then(response => response.json())
-                                .then(data => {
-                                    var wikiText = data.parse.wikitext['*'];
-                                    var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + edgeLabel + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeToNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
-                                    //var edgeString = '(\\{\\{Semantic\/Element[^}]*[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*[\\r\\n]*\\}[\\r\\n]*\\})'
-                                    var re = new RegExp(edgeString, "g");
-                                    var edgeStringFound = wikiText.search(re) >= 0;
-                                    if (edgeStringFound) {
-                                        if (editDeletedEdges["" + edgeFromNode]) {
-                                            var newWikiText = editDeletedEdges["" + edgeFromNode].replace(re, "");
-                                            editDeletedEdges["" + edgeFromNode] = newWikiText;
-                                        } else {
-                                            var newWikiText = wikiText.replace(re, "");
-                                            editDeletedEdges["" + edgeFromNode] = newWikiText;
-                                        }
-                                    }
-                                    if (newNodes["" + edgeFromNode]) {
-                                        var newWikiText = newNodes["" + edgeFromNode].replace(re, "");
-                                        newNodes["" + edgeFromNode] = newWikiText;
-                                    }
-                                    if (editNodes["" + edgeFromNode]) {
-                                        var newWikiText = editNodes["" + edgeFromNode].replace(re, "");
-                                        editNodes["" + edgeFromNode] = newWikiText;
-                                    }
-                                });
+                        if (network.getConnectedNodes(sub).length == 0) {
+                            delete editNodes[sub];
                         } else {
-                            if (network.getConnectedNodes(edgeFromNode).length == 0) {
-                                delete newNodes["" + edgeFromNode];
-                            } else {
-                                var edgeString = `(\{\{Semantic\/Link[\\r\\n]*\\|[\\r\\n]*property=` + edgeLabel + `[\\r\\n]*\\|[\\r\\n]*value=` + edgeToNode + `[\\r\\n]*\\}[\\r\\n]*\\}[\\r\\n]*)`;
-                                var re = new RegExp(edgeString, "g");
-                                var wikiText = newNodes["" + edgeFromNode];
-                                var newWikiText = wikiText.replace(re, "");
-                                newNodes["" + edgeFromNode] = newWikiText;
-                            }
+                            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
+                            editNodes[sub] = page;
                         }
                     }
+
                     //nodes.remove(edges.get(data.edges[0]).to);
                     callback(data);
                     document.querySelector('.vis-delete').remove();
                     create_link();
                 }
-                
+
                 //HTML for the manipulation popups
                 var editHtml = '' +
-                    '<div id="node-popUp">' +
+                    '<div id="node-popUp" style="width: 550px; height: 200px;">' +
                     '  <span id="node-operation" style="cursor: move;">node</span> <br />' +
                     '  <table style="margin: auto">' +
                     '    <tbody>' +
                     '      <tr>' +
                     '        <td>label</td>' +
-                    '        <td><input id="node-label" value="" /></td>' +
+                    '        <td><div id="isg-node-label-autocomplete"><input id="node-label" class="autocomplete-input" style="width: 480px;" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
                     '      </tr>' +
                     '    </tbody>' +
                     '  </table>' +
@@ -1608,13 +1445,13 @@ $(document).ready(function() {
                     '  <input type="button" value="cancel" id="node-cancelButton" />' +
                     '</div>' +
                     '' +
-                    '<div id="edge-popUp">' +
+                    '<div id="edge-popUp" style="width: 350px; height: 200px;">' +
                     '  <span id="edge-operation" style="cursor: move;">edge</span> <br />' +
                     '  <table style="margin: auto">' +
                     '    <tbody>' +
                     '      <tr>' +
                     '        <td>label</td>' +
-                    '        <td><input id="edge-label" value="" /></td>' +
+                    '        <td><div id="isg-edge-label-autocomplete"><input id="edge-label" class="autocomplete-input" style="width: 280px;" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
                     '      </tr>' +
                     '    </tbody>' +
                     '  </table>' +
@@ -1627,7 +1464,61 @@ $(document).ready(function() {
                 document.body.appendChild(editHtmlDiv);
                 //dragElement(document.getElementById("node-popUp"));
                 //dragElement(document.getElementById("edge-popUp"));
-                
+
+                //init autocompletion
+                mwjson.editor.createAutocompleteInput({
+                    div_id: "isg-node-label-autocomplete",
+                    query: (input) => { return "[[Category:KB/Term]][[Display_title_of::like:*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage"; },
+                    minInputLen : 1,
+                    filter: (result, input) => { 
+                        if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase()); 
+                        else return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase());
+                    },
+                    _renderResult: (result, props) => `
+                    <li ${props}>
+                        <div class="wiki-title">
+                            ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : result.fulltext}
+                        </div>
+                    </li>
+                    <div class="wiki-snippet">
+                        ${result.printouts['HasDescription'][0] ? result.printouts['HasDescription'][0] : ''}
+                    </div>
+                    `,
+                    renderMode: "wikitext",
+                    renderResult: (result, props) => {
+                        var wikitext = "";
+                        if (result.printouts['HasImage'][0]) wikitext += `[[${result.printouts['HasImage'][0]['fulltext']}|right|x66px|link=]]`;
+                        wikitext += `</br> [[${result.fulltext}]]`;
+                        return wikitext;
+                    },
+                    getResultValue: result => { 
+                        if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0]; 
+                        else return result.fulltext.split(":")[result.fulltext.split(":").length - 1];
+                    },
+                    onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
+                });
+                mwjson.editor.createAutocompleteInput({
+                    div_id: "isg-edge-label-autocomplete",
+                    query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
+                    filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase()); },
+                    _renderResult: (result, props) => `
+                    <li ${props}>
+                        <div class="wiki-title">
+                            ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : mwjson.util.stripNamespace(result.fulltext)}
+                        </div>
+                    </li>
+                    ${result.printouts['HasDescription'][0] ? '<div class="wiki-snippet">' + result.printouts['HasDescription'][0] + '</div>': ''}
+                    `,
+                    renderMode: "wikitext",
+                    renderResult: (result, props) => {
+                        var wikitext = "";
+                        wikitext += `[[${result.fulltext}|${mwjson.util.stripNamespace(result.fulltext)}]]`;
+                        return wikitext;
+                    },
+                    getResultValue: result => result.fulltext.split(":")[result.fulltext.split(":").length - 1],
+                    onSubmit: result => document.querySelector('#edge-label').dataset.result = JSON.stringify(result)
+                });
+
                 //function to make the manipulation popups draggable
                 function dragElement(elmnt) {
                     var pos1 = 0,
