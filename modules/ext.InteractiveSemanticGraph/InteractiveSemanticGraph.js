@@ -74,6 +74,7 @@ $(document).ready(function () {
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
                 else if (this.innerText !== "") userOptions = JSON.parse(this.innerText); //Legacy support
                 var input = { ...defaultOptions, ...userOptions };
+                input.properties = [...new Set(input.properties)]; //remove duplicates
                 input.depth = parseInt(input.depth);
                 if (input.edit) mwjson.parser.init(); //start loading parser
                 // create an array with nodes
