@@ -824,72 +824,22 @@ $(document).ready(function () {
                                 x: params.pointer.DOM.x,
                                 y: params.pointer.DOM.y
                             })).id;
-                            var subject = nodeID.split("#")[0];
-                            var subObject = "";
-                            if (nodeID.split("#")[1]) {
-                                subObject = nodeID.split("#")[1].replace(" ", "_");
-                            }
-                            var namespace_id = 0;
-                            if (subject.split(":")[1]) {
-                                const namespace = subject.split(":")[0];
-                                subject = subject.split(":")[1];
-                                namespace_id = mw.config.get('wgNamespaceIds')[namespace.replaceAll(" ", "_").toLowerCase()];
-                                //console.log(`Namespace ${namespace}, ID ${namespace_id}`);
+
+                            var selected_node = nodes.get(network.getNodeAt({
+                                x: params.pointer.DOM.x,
+                                y: params.pointer.DOM.y
+                            }));
+                            if (selected_node.url) {
+                                var li = document.createElement("li");
+                                li.innerHTML = '' + '\uD83D\uDD17' + ' ' + selected_node.label;
+                                li.addEventListener("click", function NewTab() {
+                                    window.open(selected_node.url);
+                                });
+                                ul.prepend(li);
                             }
 
-                            //inverse properties are only available in html format
-                            const query = `/w/api.php?action=smwbrowse&browse=subject&params={"subject":"${encodeURIComponent(subject)}","subobject":"${subObject}","options":{"showAll":"true"}, "ns":${namespace_id}, "type":"html"}&format=json`;
-                            fetch(query)
-                                .then(response => response.json())
-                                .then(data => {
-                                    var selected_node = nodes.get(network.getNodeAt({
-                                        x: params.pointer.DOM.x,
-                                        y: params.pointer.DOM.y
-                                    }));
-                                    if (selected_node.url) {
-                                        var li = document.createElement("li");
-                                        li.innerHTML = '' + '\uD83D\uDD17' + ' ' + selected_node.label;
-                                        li.addEventListener("click", function NewTab() {
-                                            window.open(selected_node.url);
-                                        });
-                                        ul.prepend(li);
-                                    }
-                                    var page_properties = [];
-                                    $html = $(data.query);
-                                    $html.find("div.smwb-propvalue").each(function () {
-                                        $prop = $(this).find("div.smwb-prophead a");
-                                        //var propName = $prop.text();
-                                        //var propName = $prop.attr('title').replace("Property:", "");
-                                        var propName = "";
-                                        if ($prop.attr('title') === "Special:Categories") propName += "Category";
-                                        else if ($prop.attr('title') === "Special:ListRedirects") return;
-                                        else if ($prop.attr('href')) propName += $prop.attr('href').split("Property:")[1].split("&")[0];
-                                        else return; //empty property
-                                        page_properties.push(propName);
-                                        //console.log(propName);
-                                        $(this).find("div.smwb-propval span.smwb-value").each(function () {
-                                            var value = $(this).find("a").attr("title");
-                                            //console.log("-> " + value);
-                                        });
-                                        create_link();
-                                    })
-                                    $html.find("div.smwb-ipropvalue").each(function () {
-                                        $prop = $(this).find("div.smwb-prophead a");
-                                        //var propName = $prop.text();
-                                        //var propName = $prop.attr('title').replace("Property:", "");
-                                        var propName = "-";
-                                        if ($prop.attr('title') === "Special:Categories") propName += "Category";
-                                        else if ($prop.attr('title') === "Special:ListRedirects") return;
-                                        else if ($prop.attr('href')) propName += $prop.attr('href').split("Property:")[1].split("&")[0];
-                                        else return; //empty property
-                                        page_properties.push(propName);
-                                        //console.log(propName);
-                                        $(this).find("div.smwb-propval span.smwb-ivalue").each(function () {
-                                            var value = $(this).find("a").attr("title");
-                                            //console.log("-> " + value);
-                                        });
-                                        create_link();
-                                    })
+                            mwjson.api.getSemanticProperties(nodeID)
+                            .then(page_properties => {
                                     for (var i = 0; i < page_properties.length; i++) {
                                         if (!page_properties[i].startsWith("_")) {
                                             var li = document.createElement("li");
@@ -898,25 +848,8 @@ $(document).ready(function () {
                                             ul.append(li);
                                         }
                                     }
-                                    /* old: use json result */
-                                    /*
-                            var page_properties = data.query.data; //normal page
-                            if (selected_node.id.includes('#')) { //subobject
-                                for (var i = 0; i < data.query.sobj.length; i++) { 
-                                    if (data.query.sobj[i].subject.endsWith(selected_node.id.split('#').pop().replace(' ',''))){
-                                        page_properties = data.query.sobj[i].data
-                                        break;
-                                    }
-                                }
-                            }
-                            for (var i = 0; i < page_properties.length; i++) {
-                                if (!page_properties[i].property.startsWith("_")) {
-                                     var li = document.createElement("li");
-                                     li.dataset.action = page_properties[i].property.replaceAll('_',' ');
-                                     li.innerHTML = page_properties[i].property.replaceAll('_',' ');
-                                     ul.append(li);
-                                }
-                            }*/
+                                    create_link();
+
                                     //On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
                                     $(".custom-menu li").click(function () {
                                         var clickedProperty = [$(this).attr("data-action")]
