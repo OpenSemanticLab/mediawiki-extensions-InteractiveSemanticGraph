@@ -49,19 +49,20 @@ $(document).ready(function () {
             var prop_array = [];
             for (var i = 0; i < d_nodes.length; i++) {
                 nodes.add(d_nodes[i]);
-                if (prop_array.includes(d_nodes[i].group) || d_nodes[i].id == input.root) {
+            }
+            
+            for (var i = 0; i < d_edges.length; i++) {
+                edges.add(d_edges[i]);
+                if (prop_array.includes(d_edges[i].group)) {
                     continue;
 
                 } else {
-                    prop_array.push(d_nodes[i].group);
-                    colors.push(d_nodes[i].color);
+                    prop_array.push(d_edges[i].group);
+                    colors.push(d_edges[i].color);
                 }
             }
-            input.properties = prop_array;
-            for (var i = 0; i < d_edges.length; i++) {
-                edges.add(d_edges[i]);
-            }
 
+            input.properties = prop_array.concat(input.properties);
             searchParams = new URLSearchParams(window.location.search);
 
         }
@@ -73,7 +74,6 @@ $(document).ready(function () {
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
                 else if (this.innerText !== "") userOptions = JSON.parse(this.innerText); //Legacy support
                 var input = { ...defaultOptions, ...userOptions };
-                input.properties = [...new Set(input.properties)]; //remove duplicates
                 input.depth = parseInt(input.depth);
                 if (input.edit) mwjson.parser.init(); //start loading parser
                 // create an array with nodes
@@ -88,8 +88,11 @@ $(document).ready(function () {
                 givenDiv.style.display = "inline-block";
                 var curr_element = this.innerHTML;
 
+                var first_call = true;
+
                 searchParams = new URLSearchParams(window.location.search);
                 if ((searchParams.has('nodes') && !(searchParams.get('nodes') === "")) || input.data) {
+                    first_call = false; //prevent auto-expand
                     if (input.data) {
                         input.data = input.data.replaceAll("&amp;", "&");
                         window.history.replaceState(null, document.title, input.data);
@@ -98,9 +101,10 @@ $(document).ready(function () {
                     read_link(input, nodes, edges, colors, curr_element);
                 }
 
+                input.properties = [...new Set(input.properties)]; //remove duplicates
                 randomColor = new isg.util.Color();
 
-                for (var i = 0; i < input.properties.length; i++) {
+                for (var i = colors.length; i < input.properties.length; i++) {
                     colors.push(randomColor.randomHSL());
                 }
 
@@ -119,7 +123,7 @@ $(document).ready(function () {
 
                 //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
                 //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
-                var first_call = true;
+
                 function fetchData(root, properties, nodeID, setGroup, setColor) {
                     if (nodes.get(root).isLiteral) return false; //don't query on literals
                     fetch(isg.util.getSmwQuery(root, properties))
@@ -766,22 +770,10 @@ $(document).ready(function () {
                                 this.removeChild(this.lastElementChild);
                             }
                         });
-                        if (!(network.getEdgeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        }) && network.getNodeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        }))) {
-                            if (edges.get(network.getEdgeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            })).from) {
+                        if (!(network.getEdgeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y}) && network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y}))) { //node clicked
+                            if (edges.get(network.getEdgeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y})).from) {
                                 params.event.preventDefault();
-                                if (edges.get(network.getEdgeAt({
-                                    x: params.pointer.DOM.x,
-                                    y: params.pointer.DOM.y
-                                })).label == 'Category') {
+                                if (edges.get(network.getEdgeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y})).label == 'Category') { //create Category page link
                                     var li = document.createElement("li");
                                     li.innerHTML = '' + '\uD83D\uDD17' + ' ' + edges.get(network.getEdgeAt({
                                         x: params.pointer.DOM.x,
@@ -794,7 +786,7 @@ $(document).ready(function () {
                                         })).to);
                                     });
                                     ul.prepend(li);
-                                } else {
+                                } else { //create property page link
                                     var li = document.createElement("li");
                                     li.innerHTML = '' + '\uD83D\uDD17' + ' ' + edges.get(network.getEdgeAt({
                                         x: params.pointer.DOM.x,
@@ -815,20 +807,11 @@ $(document).ready(function () {
                                 });
                             }
                         }
-                        if (network.getNodeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        })) {
+                        if (network.getNodeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y})) { //node clicked
                             params.event.preventDefault();
-                            const nodeID = nodes.get(network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            })).id;
 
-                            var selected_node = nodes.get(network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            }));
+                            const selected_node = nodes.get(network.getNodeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y}));
+
                             if (selected_node.url) {
                                 var li = document.createElement("li");
                                 li.innerHTML = '' + '\uD83D\uDD17' + ' ' + selected_node.label;
@@ -838,7 +821,7 @@ $(document).ready(function () {
                                 ul.prepend(li);
                             }
 
-                            mwjson.api.getSemanticProperties(nodeID)
+                            mwjson.api.getSemanticProperties(selected_node.id)
                             .then(page_properties => {
                                     for (var i = 0; i < page_properties.length; i++) {
                                         if (!page_properties[i].startsWith("_")) {
@@ -864,30 +847,12 @@ $(document).ready(function () {
                                         } else {
                                             objColors[clickedProperty] = clickedPropertyColor;
                                         }
-                                        if (!objClickedProps[nodes.get(network.getNodeAt({
-                                            x: params.pointer.DOM.x,
-                                            y: params.pointer.DOM.y
-                                        })).id]) {
-                                            objClickedProps[nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id] = new Array();
+                                        if (!objClickedProps[selected_node.id]) {
+                                            objClickedProps[selected_node.id] = new Array();
                                         }
-                                        if (!objClickedProps["" + nodes.get(network.getNodeAt({
-                                            x: params.pointer.DOM.x,
-                                            y: params.pointer.DOM.y
-                                        })).id].includes(clickedProperty[0])) {
-                                            fetchData(nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id, clickedProperty, nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id, clickedProperty, clickedPropertyColor)
-                                            objClickedProps["" + nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id].push(clickedProperty[0]);
+                                        if (!objClickedProps["" + selected_node.id].includes(clickedProperty[0])) {
+                                            fetchData(selected_node.id, clickedProperty, selected_node.id, clickedProperty, clickedPropertyColor)
+                                            objClickedProps["" + selected_node.id].push(clickedProperty[0]);
                                         }
                                         if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/)) {
                                             contextCreatedProps.push(clickedProperty[0]);
