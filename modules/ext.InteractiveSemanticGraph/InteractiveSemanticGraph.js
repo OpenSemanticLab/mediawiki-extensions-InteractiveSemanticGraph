@@ -42,8 +42,8 @@ $(document).ready(function () {
         function read_link(input, nodes, edges, colors, element) {
             param_nodes_set = true;
 
-            var d_nodes = JSON.parse(atob(searchParams.get("nodes")));
-            var d_edges = JSON.parse(atob(searchParams.get("edges")));
+            var d_nodes = mwjson.util.objectFromCompressedBase64(searchParams.get("nodes"));
+            var d_edges = mwjson.util.objectFromCompressedBase64(searchParams.get("edges"));
 
             input.root = d_nodes[0].id;
             var prop_array = [];
@@ -63,13 +63,11 @@ $(document).ready(function () {
             }
 
             searchParams = new URLSearchParams(window.location.search);
-            //console.log(JSON.parse(atob(searchParams.get("nodes"))));
-            //console.log(JSON.parse(atob(searchParams.get("edges"))));
 
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
+                var defaultOptions = { "root": "", "properties": [], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
 
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
@@ -1205,14 +1203,16 @@ $(document).ready(function () {
                 copy_button.innerHTML = "Copy permalink";
                 copy_button.style.width = "auto";
                 copy_button.style.height = "auto";
-                if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                if (requested || input.permalink || searchParams.has('nodes')) {
                     givenDiv.appendChild(copy_button);
                 }
 
                 function copy_link_data() {
-                    searchParams = new URLSearchParams(window.location.search);
+                    //searchParams = new URLSearchParams(window.location.search);
                     // variable content to be copied
-                    var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
+                    //var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
+                    create_link(true);
+                    var copyText = window.location;
                     // create an input element
                     let input = document.createElement('input');
                     // setting it's type to be text
@@ -1231,26 +1231,25 @@ $(document).ready(function () {
                 }
 
 
-                function create_link() {
+                function create_link(updateWindowLocation = false) {
 
                     searchParams = new URLSearchParams(window.location.search);
-                    var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
+                    updateWindowLocation = updateWindowLocation || (searchParams.has('permalink') && searchParams.get('permalink') === 'true')  || input.sync_permalink || searchParams.has('nodes');
 
-                    if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                    if (updateWindowLocation) {
                         if (!searchParams.has('nodes')) {
-                            window.history.replaceState(null, document.title, "?&nodes=&edges");
+                            window.history.replaceState(null, document.title, "?nodes=&edges");
                         }
+
                         searchParams = new URLSearchParams(window.location.search);
-                        var e_nodes = btoa(JSON.stringify(nodes.get()));
-                        var e_edges = btoa(JSON.stringify(edges.get()));
+                        var e_nodes = mwjson.util.objectToCompressedBase64(nodes.get());
+                        var e_edges = mwjson.util.objectToCompressedBase64(edges.get());
 
                         searchParams.set("nodes", "" + e_nodes);
                         searchParams.set("edges", "" + e_edges);
 
-
-                        window.history.pushState({}, '', "?&" + searchParams);
+                        window.history.pushState({}, '', "?" + searchParams);
                     }
-                    //window.location.search = searchParams.append('#', '42');
                 }
 
 
