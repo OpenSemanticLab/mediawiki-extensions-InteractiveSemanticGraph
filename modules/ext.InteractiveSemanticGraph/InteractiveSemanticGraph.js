@@ -36,6 +36,7 @@ $(document).ready(function () {
         var editNodes = {};
         var editDeletedEdges = {};
         var editDeletedNodes = {};
+        var editTargetNodes = []; 
         var param_nodes_set = false;
         //Draws graph from url
         function read_link(input, nodes, edges, colors, element) {
@@ -981,7 +982,7 @@ $(document).ready(function () {
                 function saveNodeData(data, callback) {
                     const input_element = document.getElementById("node-label")
                     data.label = input_element.value;
-                    if (input_element.dataset.result){ //existing page
+                    if (input_element.dataset.result && input_element.dataset.result !== 'undefined'){ //existing page
                         result = JSON.parse(input_element.dataset.result);
                         data.id = result.fulltext;
                         data.url = result.fullurl;
@@ -1108,6 +1109,7 @@ $(document).ready(function () {
                     //Creates new wikitext that will be saved after the save button is clicked
                     var sub = fromNode;
                     var obj = toNode;
+                    editTargetNodes.push(obj.id);
                     var property = data.label;
                     if (isg.util.isLabelReversed(data.label)) { //reverseOrder
                         sub = toNode;
@@ -1267,11 +1269,11 @@ $(document).ready(function () {
                             for (const [key, page] of Object.entries(editNodes)) {
                                 mwjson.parser.updateContent(page);
                                 promise = mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph");
-                                promises.append(promise);
+                                promises.push(promise);
                                 promise.then((page) => {
                                     editNodes[key] = page;
                                     alertString += "Page " + key + " edited!\r\n"
-                                    mwjson.api.purgePage(page.title);
+                                    mwjson.api.purgePage(page.title).then(() => mwjson.api.purgePage(page.title)); //Double purge
                                 }, (error) => {
                                     error_occured = true;
                                     console.log(error);
@@ -1332,6 +1334,11 @@ $(document).ready(function () {
 
                             //Notify user. 
                             Promise.allSettled(promises).then(([result]) => {
+                                const _editTargetNodes = [...new Set(editTargetNodes)]; //remove duplicates
+                                _editTargetNodes.forEach((title) => {
+                                    mwjson.api.purgePage(title);
+                                });
+                                editTargetNodes = [];
                                 mw.notify('Saved', {
                                     type: 'success'
                                 });
