@@ -42,40 +42,38 @@ $(document).ready(function () {
         function read_link(input, nodes, edges, colors, element) {
             param_nodes_set = true;
 
-            var d_nodes = JSON.parse(atob(searchParams.get("nodes")));
-            var d_edges = JSON.parse(atob(searchParams.get("edges")));
+            var d_nodes = mwjson.util.objectFromCompressedBase64(searchParams.get("nodes"));
+            var d_edges = mwjson.util.objectFromCompressedBase64(searchParams.get("edges"));
 
             input.root = d_nodes[0].id;
             var prop_array = [];
             for (var i = 0; i < d_nodes.length; i++) {
                 nodes.add(d_nodes[i]);
-                if (prop_array.includes(d_nodes[i].group) || d_nodes[i].id == input.root) {
+            }
+            
+            for (var i = 0; i < d_edges.length; i++) {
+                edges.add(d_edges[i]);
+                if (prop_array.includes(d_edges[i].group)) {
                     continue;
 
                 } else {
-                    prop_array.push(d_nodes[i].group);
-                    colors.push(d_nodes[i].color);
+                    prop_array.push(d_edges[i].group);
+                    colors.push(d_edges[i].color);
                 }
             }
-            input.properties = prop_array;
-            for (var i = 0; i < d_edges.length; i++) {
-                edges.add(d_edges[i]);
-            }
 
+            input.properties = prop_array.concat(input.properties);
             searchParams = new URLSearchParams(window.location.search);
-            //console.log(JSON.parse(atob(searchParams.get("nodes"))));
-            //console.log(JSON.parse(atob(searchParams.get("edges"))));
 
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-                var defaultOptions = { "root": "", "properties": [], "permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
+                var defaultOptions = { "root": "", "properties": [], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
 
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
                 else if (this.innerText !== "") userOptions = JSON.parse(this.innerText); //Legacy support
                 var input = { ...defaultOptions, ...userOptions };
-                input.properties = [...new Set(input.properties)]; //remove duplicates
                 input.depth = parseInt(input.depth);
                 if (input.edit) mwjson.parser.init(); //start loading parser
                 // create an array with nodes
@@ -90,8 +88,11 @@ $(document).ready(function () {
                 givenDiv.style.display = "inline-block";
                 var curr_element = this.innerHTML;
 
+                var first_call = true;
+
                 searchParams = new URLSearchParams(window.location.search);
                 if ((searchParams.has('nodes') && !(searchParams.get('nodes') === "")) || input.data) {
+                    first_call = false; //prevent auto-expand
                     if (input.data) {
                         input.data = input.data.replaceAll("&amp;", "&");
                         window.history.replaceState(null, document.title, input.data);
@@ -100,9 +101,10 @@ $(document).ready(function () {
                     read_link(input, nodes, edges, colors, curr_element);
                 }
 
+                input.properties = [...new Set(input.properties)]; //remove duplicates
                 randomColor = new isg.util.Color();
 
-                for (var i = 0; i < input.properties.length; i++) {
+                for (var i = colors.length; i < input.properties.length; i++) {
                     colors.push(randomColor.randomHSL());
                 }
 
@@ -121,7 +123,7 @@ $(document).ready(function () {
 
                 //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
                 //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
-                var first_call = true;
+
                 function fetchData(root, properties, nodeID, setGroup, setColor) {
                     if (nodes.get(root).isLiteral) return false; //don't query on literals
                     fetch(isg.util.getSmwQuery(root, properties))
@@ -170,6 +172,7 @@ $(document).ready(function () {
                                     }
                                     else if (data.query.results[root].printouts[properties[i]][j].value) label = '' + data.query.results[root].printouts[properties[i]][j].value + ' ' + data.query.results[root].printouts[properties[i]][j].unit; //quantity
                                     else if (data.query.results[root].printouts[properties[i]][j].timestamp) label = new Date(data.query.results[root].printouts[properties[i]][j].timestamp * 1000).toISOString(); //datetime
+                                    else if (data.query.results[root].printouts[properties[i]][j]['Language code']) label = data.query.results[root].printouts[properties[i]][j]['Text'].item[0] + ' (' + data.query.results[root].printouts[properties[i]][j]['Language code'].item[0] + ')'; //multi lang label
                                     else label = data.query.results[root].printouts[properties[i]][j].toString(); //other literals
 
                                     //if (!isNonExistingPage && data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]) label = data.query.results[root].printouts[properties[i] + ".HasLabel"][j+labelOffset]; //explicit use label in user language
@@ -768,22 +771,10 @@ $(document).ready(function () {
                                 this.removeChild(this.lastElementChild);
                             }
                         });
-                        if (!(network.getEdgeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        }) && network.getNodeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        }))) {
-                            if (edges.get(network.getEdgeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            })).from) {
+                        if (!(network.getEdgeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y}) && network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y}))) { //node clicked
+                            if (edges.get(network.getEdgeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y})).from) {
                                 params.event.preventDefault();
-                                if (edges.get(network.getEdgeAt({
-                                    x: params.pointer.DOM.x,
-                                    y: params.pointer.DOM.y
-                                })).label == 'Category') {
+                                if (edges.get(network.getEdgeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y})).label == 'Category') { //create Category page link
                                     var li = document.createElement("li");
                                     li.innerHTML = '' + '\uD83D\uDD17' + ' ' + edges.get(network.getEdgeAt({
                                         x: params.pointer.DOM.x,
@@ -796,7 +787,7 @@ $(document).ready(function () {
                                         })).to);
                                     });
                                     ul.prepend(li);
-                                } else {
+                                } else { //create property page link
                                     var li = document.createElement("li");
                                     li.innerHTML = '' + '\uD83D\uDD17' + ' ' + edges.get(network.getEdgeAt({
                                         x: params.pointer.DOM.x,
@@ -817,20 +808,11 @@ $(document).ready(function () {
                                 });
                             }
                         }
-                        if (network.getNodeAt({
-                            x: params.pointer.DOM.x,
-                            y: params.pointer.DOM.y
-                        })) {
+                        if (network.getNodeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y})) { //node clicked
                             params.event.preventDefault();
-                            const nodeID = nodes.get(network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            })).id;
 
-                            var selected_node = nodes.get(network.getNodeAt({
-                                x: params.pointer.DOM.x,
-                                y: params.pointer.DOM.y
-                            }));
+                            const selected_node = nodes.get(network.getNodeAt({x: params.pointer.DOM.x, y: params.pointer.DOM.y}));
+
                             if (selected_node.url) {
                                 var li = document.createElement("li");
                                 li.innerHTML = '' + '\uD83D\uDD17' + ' ' + selected_node.label;
@@ -840,7 +822,7 @@ $(document).ready(function () {
                                 ul.prepend(li);
                             }
 
-                            mwjson.api.getSemanticProperties(nodeID)
+                            mwjson.api.getSemanticProperties(selected_node.id)
                             .then(page_properties => {
                                     for (var i = 0; i < page_properties.length; i++) {
                                         if (!page_properties[i].startsWith("_")) {
@@ -866,30 +848,12 @@ $(document).ready(function () {
                                         } else {
                                             objColors[clickedProperty] = clickedPropertyColor;
                                         }
-                                        if (!objClickedProps[nodes.get(network.getNodeAt({
-                                            x: params.pointer.DOM.x,
-                                            y: params.pointer.DOM.y
-                                        })).id]) {
-                                            objClickedProps[nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id] = new Array();
+                                        if (!objClickedProps[selected_node.id]) {
+                                            objClickedProps[selected_node.id] = new Array();
                                         }
-                                        if (!objClickedProps["" + nodes.get(network.getNodeAt({
-                                            x: params.pointer.DOM.x,
-                                            y: params.pointer.DOM.y
-                                        })).id].includes(clickedProperty[0])) {
-                                            fetchData(nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id, clickedProperty, nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id, clickedProperty, clickedPropertyColor)
-                                            objClickedProps["" + nodes.get(network.getNodeAt({
-                                                x: params.pointer.DOM.x,
-                                                y: params.pointer.DOM.y
-                                            })).id].push(clickedProperty[0]);
+                                        if (!objClickedProps["" + selected_node.id].includes(clickedProperty[0])) {
+                                            fetchData(selected_node.id, clickedProperty, selected_node.id, clickedProperty, clickedPropertyColor)
+                                            objClickedProps["" + selected_node.id].push(clickedProperty[0]);
                                         }
                                         if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/)) {
                                             contextCreatedProps.push(clickedProperty[0]);
@@ -1205,14 +1169,16 @@ $(document).ready(function () {
                 copy_button.innerHTML = "Copy permalink";
                 copy_button.style.width = "auto";
                 copy_button.style.height = "auto";
-                if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                if (requested || input.permalink || searchParams.has('nodes')) {
                     givenDiv.appendChild(copy_button);
                 }
 
                 function copy_link_data() {
-                    searchParams = new URLSearchParams(window.location.search);
+                    //searchParams = new URLSearchParams(window.location.search);
                     // variable content to be copied
-                    var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
+                    //var copyText = "" + "?&nodes=" + searchParams.get("nodes") + "&edges=" + searchParams.get("edges")
+                    create_link(true);
+                    var copyText = window.location;
                     // create an input element
                     let input = document.createElement('input');
                     // setting it's type to be text
@@ -1231,26 +1197,25 @@ $(document).ready(function () {
                 }
 
 
-                function create_link() {
+                function create_link(updateWindowLocation = false) {
 
                     searchParams = new URLSearchParams(window.location.search);
-                    var requested = searchParams.has('permalink') && searchParams.get('permalink') === 'true';
+                    updateWindowLocation = updateWindowLocation || (searchParams.has('permalink') && searchParams.get('permalink') === 'true')  || input.sync_permalink || searchParams.has('nodes');
 
-                    if (requested || input.permalink === "true" || searchParams.has('nodes')) {
+                    if (updateWindowLocation) {
                         if (!searchParams.has('nodes')) {
-                            window.history.replaceState(null, document.title, "?&nodes=&edges");
+                            window.history.replaceState(null, document.title, "?nodes=&edges");
                         }
+
                         searchParams = new URLSearchParams(window.location.search);
-                        var e_nodes = btoa(JSON.stringify(nodes.get()));
-                        var e_edges = btoa(JSON.stringify(edges.get()));
+                        var e_nodes = mwjson.util.objectToCompressedBase64(nodes.get());
+                        var e_edges = mwjson.util.objectToCompressedBase64(edges.get());
 
                         searchParams.set("nodes", "" + e_nodes);
                         searchParams.set("edges", "" + e_edges);
 
-
-                        window.history.pushState({}, '', "?&" + searchParams);
+                        window.history.pushState({}, '', "?" + searchParams);
                     }
-                    //window.location.search = searchParams.append('#', '42');
                 }
 
 
@@ -1489,6 +1454,7 @@ $(document).ready(function () {
                         var wikitext = "";
                         if (result.printouts['HasImage'][0]) wikitext += `[[${result.printouts['HasImage'][0]['fulltext']}|right|x66px|link=]]`;
                         wikitext += `</br> [[${result.fulltext}]]`;
+                        if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
                         return wikitext;
                     },
                     getResultValue: result => { 
@@ -1497,6 +1463,7 @@ $(document).ready(function () {
                     },
                     onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
                 });
+                console.log("Autocomplete");
                 mwjson.editor.createAutocompleteInput({
                     div_id: "isg-edge-label-autocomplete",
                     query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
@@ -1513,6 +1480,7 @@ $(document).ready(function () {
                     renderResult: (result, props) => {
                         var wikitext = "";
                         wikitext += `[[${result.fulltext}|${mwjson.util.stripNamespace(result.fulltext)}]]`;
+                        if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
                         return wikitext;
                     },
                     getResultValue: result => result.fulltext.split(":")[result.fulltext.split(":").length - 1],
