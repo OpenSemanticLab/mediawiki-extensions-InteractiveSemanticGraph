@@ -1454,6 +1454,7 @@ $(document).ready(function () {
                         var wikitext = "";
                         if (result.printouts['HasImage'][0]) wikitext += `[[${result.printouts['HasImage'][0]['fulltext']}|right|x66px|link=]]`;
                         wikitext += `</br> [[${result.fulltext}]]`;
+                        if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
                         return wikitext;
                     },
                     getResultValue: result => { 
@@ -1462,6 +1463,7 @@ $(document).ready(function () {
                     },
                     onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
                 });
+                console.log("Autocomplete");
                 mwjson.editor.createAutocompleteInput({
                     div_id: "isg-edge-label-autocomplete",
                     query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
@@ -1478,6 +1480,7 @@ $(document).ready(function () {
                     renderResult: (result, props) => {
                         var wikitext = "";
                         wikitext += `[[${result.fulltext}|${mwjson.util.stripNamespace(result.fulltext)}]]`;
+                        if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
                         return wikitext;
                     },
                     getResultValue: result => result.fulltext.split(":")[result.fulltext.split(":").length - 1],
