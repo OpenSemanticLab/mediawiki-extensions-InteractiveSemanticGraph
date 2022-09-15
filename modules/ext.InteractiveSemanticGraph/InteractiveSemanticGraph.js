@@ -68,7 +68,7 @@ $(document).ready(function () {
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-                var defaultOptions = { "root": "", "properties": [], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
+                var defaultOptions = { "root": "", "properties": [], "ignore_properties": ["HasLabel"], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
 
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
@@ -102,6 +102,7 @@ $(document).ready(function () {
                 }
 
                 input.properties = [...new Set(input.properties)]; //remove duplicates
+                input.properties = input.properties.filter( function( el ) {return !input.ignore_properties.includes( el );} ); //remove ignored properties
                 randomColor = new isg.util.Color();
 
                 for (var i = colors.length; i < input.properties.length; i++) {
@@ -824,6 +825,7 @@ $(document).ready(function () {
 
                             mwjson.api.getSemanticProperties(selected_node.id)
                             .then(page_properties => {
+                                    page_properties = page_properties.filter( function( el ) {return !input.ignore_properties.includes( el );} ); //remove ignored properties
                                     for (var i = 0; i < page_properties.length; i++) {
                                         if (!page_properties[i].startsWith("_")) {
                                             var li = document.createElement("li");
@@ -1433,7 +1435,7 @@ $(document).ready(function () {
                 //init autocompletion
                 mwjson.editor.createAutocompleteInput({
                     div_id: "isg-node-label-autocomplete",
-                    query: (input) => { return "[[Category:KB/Term]][[Display_title_of::like:*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage"; },
+                    query: (input) => { return "[[Category:KB/Term]][[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage"; },
                     minInputLen : 1,
                     filter: (result, input) => { 
                         if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase()); 
