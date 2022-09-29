@@ -68,7 +68,7 @@ $(document).ready(function () {
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
-                var defaultOptions = { "root": "", "properties": [], "ignore_properties": ["HasLabel"], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
+                var defaultOptions = { "root": "", "properties": [], "ignore_properties": [], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
 
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
@@ -1373,21 +1373,30 @@ $(document).ready(function () {
                         obj = edgeFromNode;
                         property = isg.util.reverseLabel(property)
                     }
-                    var page = {};
-                    if (editNodes[sub]) page = editNodes[sub];
-                    else page = await mwjson.api.getPage(sub);
-                    await mwjson.parser.init();
+                    var page = undefined;
+                    if (!editNodes[sub]) { //subject page not handled yet
+                        page = await mwjson.api.getPage(sub);
+                        if (page.exists) {
+                            await mwjson.parser.init();
+                            mwjson.parser.parsePage(page);
+                            if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
+                                //there is already a KB/Term Template
+                            } else {
+                                console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                            }
+                            
+                        }
+                        editNodes[sub] = page; //store page state   
+                    }
+                    else page = editNodes[sub]; //use stored state
                     if (page.exists) {
-                        mwjson.parser.parsePage(page);
                         mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
-                        editNodes[sub] = page;
+                        editNodes[sub] = page; //store page state   
                     } else {
+                        console.log(`ERROR: subject page ${sub.id} does not exist`);
                         if (network.getConnectedNodes(sub).length == 0) {
                             delete editNodes[sub];
-                        } else {
-                            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
-                            editNodes[sub] = page;
-                        }
+                        } 
                     }
 
                     //nodes.remove(edges.get(data.edges[0]).to);
