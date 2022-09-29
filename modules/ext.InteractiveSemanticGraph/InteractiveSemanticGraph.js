@@ -1391,6 +1391,7 @@ $(document).ready(function () {
                     else page = editNodes[sub]; //use stored state
                     if (page.exists) {
                         mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
+                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': "Property:" + edgeLabel, 'value': obj }, {}); //delete relation with property NS
                         editNodes[sub] = page; //store page state   
                     } else {
                         console.log(`ERROR: subject page ${sub.id} does not exist`);
