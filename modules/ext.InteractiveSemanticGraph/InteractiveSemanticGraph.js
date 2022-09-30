@@ -103,13 +103,19 @@ $(document).ready(function () {
 
                 input.properties = [...new Set(input.properties)]; //remove duplicates
                 input.properties = input.properties.filter( function( el ) {return !input.ignore_properties.includes( el );} ); //remove ignored properties
+                input.inverseProperties = input.properties.filter( p => isg.util.isLabelReversed(p));
+                input.noninverseProperties = input.properties.filter( p => !isg.util.isLabelReversed(p));
+                input.normalizedProperties = [];
+                input.noninverseProperties.forEach(p => input.normalizedProperties.push(p)); 
+                input.inverseProperties.forEach(p => input.normalizedProperties.push(isg.util.reverseLabel(p))); //normalize propertes
+                input.normalizedProperties = [...new Set(input.normalizedProperties)]; //remove dublicates
                 randomColor = new isg.util.Color();
 
                 for (var i = colors.length; i < input.properties.length; i++) {
                     colors.push(randomColor.randomHSL());
                 }
 
-                function isLabelSet(id) {
+                function nodeExists(id) {
                     node = nodes.get(id);
                     if (node === null) return false;
                     else return id;
@@ -127,6 +133,14 @@ $(document).ready(function () {
 
                 function fetchData(root, properties, nodeID, setGroup, setColor) {
                     if (nodes.get(root).isLiteral) return false; //don't query on literals
+                    //split the query because due to results are wrong if a property and it's inverse version a queried at the same time 
+                    var inverseProperties = properties.filter( p => isg.util.isLabelReversed(p));
+                    var noninverseProperties = properties.filter( p => !isg.util.isLabelReversed(p));
+                    runQuery(root, noninverseProperties, nodeID, setGroup, setColor);
+                    runQuery(root, inverseProperties, nodeID, setGroup, setColor);
+                }
+
+                function runQuery(root, properties, nodeID, setGroup, setColor) {
                     fetch(isg.util.getSmwQuery(root, properties))
                         .then(response => response.json())
                         .then(data => {
@@ -141,13 +155,18 @@ $(document).ready(function () {
                                 var labelOffset = 0;
                                 for (var j = 0; j < data.query.results[root].printouts[properties[i]].length; j++) {
 
+                                    var edgeLabel = properties[i];
+                                    //handle inverse properties like normal ones
+                                    var isReverseProperty = isg.util.isLabelReversed(edgeLabel);
+                                    if (isReverseProperty) edgeLabel = isg.util.reverseLabel(edgeLabel);
+
                                     //define colors
-                                    if (!(properties[i] in legendColors) && setColor) {
-                                        legendColors[properties[i]] = colors[i];
+                                    if (!(edgeLabel in legendColors) && setColor) {
+                                        legendColors[edgeLabel] = colors[i];
                                     } else {
-                                        setColor = legendColors[properties[i]];
-                                        colors[i] = legendColors[properties[i]];
-                                        colors[i] = legendColors[properties[i]];
+                                        setColor = legendColors[edgeLabel];
+                                        colors[i] = legendColors[edgeLabel];
+                                        colors[i] = legendColors[edgeLabel];
                                     }
                                     //define id and label. use displaytitle if available. Use string representation of non-page properties
                                     var id = isg.util.uuidv4(); //default: UUID
@@ -189,10 +208,15 @@ $(document).ready(function () {
                                         shape = "image";
                                         label = "";
                                     }
-                                    var edgeLabel = properties[i];
+                                    
                                     //if (!input.edge_labels) edgeLabel = undefined; //some features depend on the labels, so we can't simple remove them
-
-                                    if (isLabelSet(id) === false) { //test if node with id exists
+                                    
+                                    var sub = input.root; //subject
+                                    if (nodeID) sub = nodeID;
+                                    obj = id;
+                                    if (isReverseProperty) [sub, obj] = [obj, sub]; //swap sub and obj
+                                    
+                                    if (nodeExists(id) === false) { //test if node with id exists
                                         if (setGroup && setColor) {
                                             nodes.add({
                                                 id: id,
@@ -212,39 +236,31 @@ $(document).ready(function () {
                                                 id: id,
                                                 label: label,
                                                 color: color,
-                                                group: properties[i],
+                                                group: edgeLabel,
                                                 hidden: false,
                                                 url: data.query.results[root].printouts[properties[i]][j].fullurl,
                                                 isLiteral: isLiteral,
                                                 image: image,
                                                 shape: shape,
                                             });
-                                            oldGroups["" + id] = properties[i];
+                                            oldGroups["" + id] = edgeLabel;
                                         }
-                                        if (nodeID) {
+                                        if (!edgeExists(sub, edgeLabel, obj)) {
                                             edges.add({
-                                                from: nodeID,
-                                                to: id,
+                                                from: sub,
+                                                to: obj,
                                                 label: edgeLabel,
                                                 color: colors[i],
-                                                group: properties[i]
-                                            });
-                                        } else {
-                                            edges.add({
-                                                from: input.root,
-                                                to: id,
-                                                label: edgeLabel,
-                                                color: colors[i],
-                                                group: properties[i]
+                                                group: edgeLabel
                                             });
                                         }
-                                    } else {
+                                    } else if(!edgeExists(sub, edgeLabel, obj)){
                                         edges.add({
-                                            from: nodeID,
-                                            to: isLabelSet(id),
+                                            from: sub,
+                                            to: obj,
                                             label: edgeLabel,
                                             color: setColor,
-                                            group: properties[i]
+                                            group: edgeLabel
                                         });
                                     }
                                 }
@@ -262,6 +278,7 @@ $(document).ready(function () {
                             return true;
                         });
                 }
+
                 if (param_nodes_set === false) {
                     fetchData(input.root, input.properties);
                 }
@@ -336,8 +353,8 @@ $(document).ready(function () {
                 options = { ...options, ...input.visnetwork };
 
                 //Creates groups in the options and sets them all to hidden:false.
-                for (var i = 0; i < input.properties.length; i++) {
-                    options.groups[input.properties[i]] = {
+                for (var i = 0; i < input.normalizedProperties.length; i++) {
+                    options.groups[input.normalizedProperties[i]] = {
                         hidden: false
                     };
                 }
@@ -390,6 +407,16 @@ $(document).ready(function () {
                     return edges.get().filter(function (edge) {
                         return (edge.from === node1 && edge.to === node2) || (edge.from === node2 && edge.to === node1);
                     });
+                }
+
+                //The function edgeExists() returns all true, if the given edge already exists, else false
+                function edgeExists(node1, edgeLabel, node2) {
+                    var res =  edges.get().filter(function (edge) {
+                        return (edge.from === node1 && edge.label === edgeLabel && edge.to === node2);
+                    });
+                    var exits = res.length == 0 ? false : true;
+                    return exits
+
                 }
 
                 //Cartesian Product of arrays
@@ -724,13 +751,13 @@ $(document).ready(function () {
                 legendDiv.style.display = 'inline-block';
                 legendDiv.id = "legendContainer";
                 var legendColors = {};
-                for (var i = 0; i < input.properties.length; i++) {
-                    legendColors[input.properties[i]] = colors[i];
+                for (var i = 0; i < input.normalizedProperties.length; i++) { //create legend entries only for non-inversed properties
+                    legendColors[input.normalizedProperties[i]] = colors[i];
                     var propertyContainer = document.createElement("div");
                     var propertyColor = document.createElement("div");
                     var propertyName = document.createElement("div");
                     propertyContainer.className = "legend-element-container";
-                    propertyContainer.id = input.properties[i];
+                    propertyContainer.id = input.normalizedProperties[i];
                     propertyColor.className = "color-container";
                     propertyName.className = "name-container";
                     propertyColor.style.float = "left";
@@ -739,7 +766,7 @@ $(document).ready(function () {
                     propertyName.style.border = "1px solid black";
                     propertyColor.style.background = colors[i];
                     propertyColor.innerHTML = "";
-                    propertyName.innerHTML = input.properties[i];
+                    propertyName.innerHTML = input.normalizedProperties[i];
                     propertyColor.style.width = "30px";
                     propertyColor.style.height = "30px";
                     propertyName.style.height = "30px";
@@ -854,7 +881,7 @@ $(document).ready(function () {
                                             objClickedProps[selected_node.id] = new Array();
                                         }
                                         if (!objClickedProps["" + selected_node.id].includes(clickedProperty[0])) {
-                                            fetchData(selected_node.id, clickedProperty, selected_node.id, clickedProperty, clickedPropertyColor)
+                                            fetchData(selected_node.id, clickedProperty, selected_node.id);
                                             objClickedProps["" + selected_node.id].push(clickedProperty[0]);
                                         }
                                         if (!(contextCreatedProps.includes(clickedProperty[0]) || input.properties.includes(clickedProperty[0]) /*|| legendColors[clickedProperty[0]]*/)) {
@@ -959,7 +986,7 @@ $(document).ready(function () {
                     }
                     data.hidden = false;
                     data.physics = false;
-                    console.log(data);
+                    //console.log(data);
                     input_element.value = "";
                     input_element.dataset.result = "";
                     clearNodePopUp();
@@ -1475,7 +1502,7 @@ $(document).ready(function () {
                     },
                     onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
                 });
-                console.log("Autocomplete");
+
                 mwjson.editor.createAutocompleteInput({
                     div_id: "isg-edge-label-autocomplete",
                     query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
