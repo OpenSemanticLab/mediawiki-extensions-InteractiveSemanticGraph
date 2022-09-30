@@ -1367,8 +1367,8 @@ $(document).ready(function () {
                     }
                     var sub = edgeFromNode;
                     var obj = edgeToNode;
-                    var property = edgeLabel[0];
-                    if (edgeLabel[0] == "-") {
+                    var property = edgeLabel;
+                    if (isg.util.isLabelReversed(property)) {
                         sub = edgeToNode;
                         obj = edgeFromNode;
                         property = isg.util.reverseLabel(property)
@@ -1390,8 +1390,8 @@ $(document).ready(function () {
                     }
                     else page = editNodes[sub]; //use stored state
                     if (page.exists) {
-                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': edgeLabel, 'value': obj }, {}); //delete relation
-                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': "Property:" + edgeLabel, 'value': obj }, {}); //delete relation with property NS
+                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': property, 'value': obj }, {}); //delete relation
+                        mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': "Property:" + property, 'value': obj }, {}); //delete relation with property NS
                         editNodes[sub] = page; //store page state   
                     } else {
                         console.log(`ERROR: subject page ${sub.id} does not exist`);
