@@ -31,6 +31,9 @@
             ],
             "scripts":[
                 "vis-network.min.js",
+                "InteractiveSemanticGraph.js",
+                "InteractiveSemanticGraphData.js",
+                "InteractiveSemanticGraphUI.js",
                 "InteractiveSemanticGraphUtils.js",
                 "split-grid.min.js",
                 "InteractiveSemanticGraphBrowser.js",

@@ -5,22 +5,6 @@ REL: modules/ext.InteractiveSemanticGraph/InteractiveSemanticGraph.js
 hint: ResourceLoader minifier does not support ES6 yet, therefore skip minification  with "nomin" (see https://phabricator.wikimedia.org/T255556)
 */
 
-//Root class
-class isg {
-    constructor() {
-
-    }
-    static version = "0.0.1";
-
-    static getVersion() {
-        return this.version;
-    }
-}
-
-// Assigning namespace.
-window.isg = isg;
-
-
 $(document).ready(function () {
 
     $.when(
@@ -68,6 +52,9 @@ $(document).ready(function () {
         }
         $(".InteractiveSemanticGraph").each(function (index) {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
+
+                var graph = new isg.Graph(this);
+                
                 var defaultOptions = { "root": "", "properties": [], "ignore_properties": [], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
                 var userOptions = {};
 
@@ -84,8 +71,6 @@ $(document).ready(function () {
                 var colors = [];
                 var oldGroups = {};
                 var givenDiv = this;
-                givenDiv.style.position = "relative";
-                givenDiv.style.display = "inline-block";
                 var curr_element = this.innerHTML;
 
                 var first_call = true;
