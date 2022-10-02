@@ -31,10 +31,10 @@
             ],
             "scripts":[
                 "vis-network.min.js",
-                "InteractiveSemanticGraph.js",
                 "InteractiveSemanticGraphUtils.js",
                 "split-grid.min.js",
-                "InteractiveSemanticGraphBrowser.js"
+                "InteractiveSemanticGraphBrowser.js",
+                "InteractiveSemanticGraph_init.js"
             ],
             "position":"bottom"
         }
