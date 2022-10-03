@@ -54,6 +54,35 @@ isg.util = class {
         }
     }
 
+    //Cartesian Product of arrays
+    static cartesianProduct(arr) {
+        return arr.reduce(function (a, b) {
+            return a.map(function (x) {
+                return b.map(function (y) {
+                    return x.concat([y]);
+                })
+            }).reduce(function (a, b) { return a.concat(b) }, [])
+        }, [[]])
+    }
+
+    //Copies a text into the clipboard
+    static copyToClipboad(copyText) {
+        // create an input element
+        let input = document.createElement('input');
+        // setting it's type to be text
+        input.setAttribute('type', 'text');
+        // setting the input value to equal to the text we are copying
+        input.value = copyText;
+        // appending it to the document
+        document.body.appendChild(input);
+        // calling the select, to select the text displayed
+        // if it's not in the document we won't be able to
+        input.select();
+        // calling the copy command
+        document.execCommand("copy");
+        // removing the input from the document
+        document.body.removeChild(input)
+    }
 
 }
 
