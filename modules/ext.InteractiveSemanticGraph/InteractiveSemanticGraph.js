@@ -59,7 +59,7 @@ isg.Graph = class {
         this.config.normalizedProperties = [];
         this.config.noninverseProperties.forEach(p => this.config.normalizedProperties.push(p));
         this.config.inverseProperties.forEach(p => this.config.normalizedProperties.push(isg.util.reverseLabel(p))); //normalize propertes
-        this.config.normalizedProperties = [...new Set(this.config.normalizedProperties)]; //remove dublicates
+        this.config.normalizedProperties = [...new Set(this.config.normalizedProperties)]; //remove duplicates
         this.randomColor = new isg.util.Color();
 
         
