@@ -160,6 +160,26 @@ isg.Data = class {
         return deferred.promise();
     }
 
+    //Makes an API call to retrieve the type of a given property
+    fetchPropertyType(property) {
+        property = "Property:" + property;
+        const deferred = $.Deferred();
+        fetch("/w/api.php?action=ask&query=[[" + property + "]]|?Has_type=type&format=json")
+            .then(response => response.json())
+            .then(data => {
+                if (data.query.results[property].printouts["type"]) {
+                    var type = data.query.results[property].printouts["type"][0];
+                    //TODO: Add other types
+                    if (type === "http://semantic-mediawiki.org/swivt/1.0#_qty") deferred.resolve("quantity");
+                    deferred.resolve("page")
+                }
+                else {
+                    deferred.resolve("page")
+                }
+            });
+        return deferred.promise();
+    }
+
     //Called on save button click. Creates new wiki pages or edits them with the created wiki text.
     saveGraphChanges() {
         var alertString = "";

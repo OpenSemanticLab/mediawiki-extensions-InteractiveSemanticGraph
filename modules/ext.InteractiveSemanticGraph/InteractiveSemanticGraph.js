@@ -719,22 +719,31 @@ isg.Graph = class {
             obj = fromNode;
             property = reverseLabel(property)
         }
-        if (!this.data.editNodes[obj.id]) { //object page not handled yet
-            var page = await mwjson.api.getPage(obj.id);
-            if (!page.exists) { //create page with default content
-                page.title = obj.id;
-                page.dict = [{
-                    'OslTemplate:KB/Term': {
-                        'label': obj.label,
-                        'label_lang_code': 'en',
-                        'description': "",
-                        'relations': []
+        //TODO: make async
+        const property_type = await this.data.fetchPropertyType(property);
+        //console.log(property_type);
+        var property_value = obj.label;
+
+        if (property_type === 'page') {
+            //create new page with given id if not exists yet
+            property_value = obj.id;
+            if (!this.data.editNodes[obj.id]) { //object page not handled yet
+                var page = await mwjson.api.getPage(obj.id);
+                if (!page.exists) { //create page with default content
+                    page.title = obj.id;
+                    page.dict = [{
+                        'OslTemplate:KB/Term': {
+                            'label': obj.label,
+                            'label_lang_code': 'en',
+                            'description': "",
+                            'relations': []
+                        }
                     }
+                        , "\n=Details=\n\n",
+                    { 'OslTemplate:KB/Term/Footer': {} }
+                    ];
+                    this.data.editNodes[obj.id] = page; //store page state
                 }
-                    , "\n=Details=\n\n",
-                { 'OslTemplate:KB/Term/Footer': {} }
-                ];
-                this.data.editNodes[obj.id] = page; //store page state
             }
         }
         var page = undefined;
@@ -776,7 +785,7 @@ isg.Graph = class {
         mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
             'OslTemplate:KB/Relation': {
                 'property': property,
-                'value': obj.id
+                'value': property_value
             }
         });
         this.data.editNodes[sub.id] = page; //update stored page state    
@@ -819,12 +828,13 @@ isg.Graph = class {
 
     //Deletes edge in manipulation mode and deletes the property from the node wikipages
     async deleteSelectedEdge(data, callback) {
-        var edgeToNode = this.data.edges.get(data.edges[0]).to;
-        var edgeFromNode = this.data.edges.get(data.edges[0]).from;
+        var edgeToNodeId = this.data.edges.get(data.edges[0]).to;
+        var edgeToNode = this.data.nodes.get(edgeToNodeId);
+        var edgeFromNodeId = this.data.edges.get(data.edges[0]).from;
         var edgeLabel = this.data.edges.get(data.edges[0]).label;
         this.data.edges.remove(data.edges[0]);
-        this.deleteNodesChildren(edgeToNode, true);
-        this.deleteNodesChildren(edgeFromNode, true);
+        this.deleteNodesChildren(edgeToNodeId, true);
+        this.deleteNodesChildren(edgeFromNodeId, true);
         for (var i = 0; i < this.contextCreatedProps.length; i++) {
             var noNodesInNetwork = true;
             for (var j = 0; j < this.data.nodes.getIds().length; j++) {
@@ -838,14 +848,19 @@ isg.Graph = class {
                 i--;
             }
         }
-        var sub = edgeFromNode;
-        var obj = edgeToNode;
+        var sub = edgeFromNodeId;
+        var obj = edgeToNodeId;
         var property = edgeLabel;
         if (isg.util.isLabelReversed(property)) {
-            sub = edgeToNode;
-            obj = edgeFromNode;
-            property = isg.util.reverseLabel(property)
+            sub = edgeToNodeId;
+            obj = edgeFromNodeId;
+            property = isg.util.reverseLabel(property);
         }
+        const property_type = await this.data.fetchPropertyType(property);
+
+        if (property_type === 'quantity' || edgeToNode.isLiteral) obj = edgeToNode.label; //will never be reversed
+        //console.log(property_type, obj);
+
         var page = undefined;
         if (!this.data.editNodes[sub]) { //subject page not handled yet
             page = await mwjson.api.getPage(sub);

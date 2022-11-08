@@ -180,7 +180,7 @@ isg.UI = class {
 
         mwjson.editor.createAutocompleteInput({
             div_id: "isg-edge-label-autocomplete",
-            query: (input) => { return "[[Category:ObjectProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
+            query: (input) => { return "[[Category:ObjectProperty]]OR[[Category:QuantityProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
             filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase()); },
             _renderResult: (result, props) => `
                             <li ${props}>
