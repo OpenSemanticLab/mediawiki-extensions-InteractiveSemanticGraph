@@ -147,7 +147,7 @@ isg.UI = class {
         //init autocompletion
         mwjson.editor.createAutocompleteInput({
             div_id: "isg-node-label-autocomplete",
-            query: (input) => { return "[[Category:KB/Term]][[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage"; },
+            query: (input) => { return "[[Category:KB/Term]][[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage|limit=1000"; },
             minInputLen: 1,
             filter: (result, input) => {
                 if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase());
@@ -180,7 +180,7 @@ isg.UI = class {
 
         mwjson.editor.createAutocompleteInput({
             div_id: "isg-edge-label-autocomplete",
-            query: (input) => { return "[[Category:ObjectProperty]]OR[[Category:QuantityProperty]]|?Display_title_of=HasDisplayName|?HasDescription"; },
+            query: (input) => { return "[[Category:ObjectProperty]]OR[[Category:QuantityProperty]]|?Display_title_of=HasDisplayName|?HasDescription|limit=1000"; },
             filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase()); },
             _renderResult: (result, props) => `
                             <li ${props}>
