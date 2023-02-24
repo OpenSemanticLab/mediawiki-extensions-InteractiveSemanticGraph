@@ -281,7 +281,7 @@ isg.Graph = class {
         setTimeout(() => {
             if (this.loop_counter == this.config.depth - 1) return;
             this.loop_counter++;
-            var new_nodes_loop = nodes.getIds();
+            var new_nodes_loop = this.data.nodes.getIds();
             //console.log(new_nodes_loop);
             this.getStartIds(new_nodes_loop);
         }, 300)
