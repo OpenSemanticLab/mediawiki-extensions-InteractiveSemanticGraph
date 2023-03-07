@@ -6,7 +6,7 @@ hint: ResourceLoader minifier does not support ES6 yet, therefore skip minificat
 isg.UI = class {
 
 
-    constructor(container, config = { onLegendClick: undefined }) {
+    constructor(container, config = { onLegendClick: undefined, legacy_mode: false }) {
         this.config = config;
         this.container = container;
         this.container.style.position = "relative";
@@ -144,10 +144,13 @@ isg.UI = class {
         //dragElement(document.getElementById("node-popUp"));
         //dragElement(document.getElementById("edge-popUp"));
 
+        var query_prefix = "[[Category:Entity]]";
+        if (this.config.legacy_mode) query_prefix = "[[Category:KB/Term]]";
+
         //init autocompletion
         mwjson.editor.createAutocompleteInput({
             div_id: "isg-node-label-autocomplete",
-            query: (input) => { return "[[Category:KB/Term]][[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage|limit=1000"; },
+            query: (input) => { return query_prefix + "[[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage|limit=1000"; },
             minInputLen: 1,
             filter: (result, input) => {
                 if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase());

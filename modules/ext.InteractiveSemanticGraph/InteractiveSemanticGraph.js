@@ -34,7 +34,7 @@ isg.Graph = class {
     constructor(container, config) {
         this.container = container
         this.config = config;
-        this.ui = new isg.UI(this.container, { onLegendClick: (legendEntry) => this.legendFunctionality(legendEntry) });
+        this.ui = new isg.UI(this.container, { onLegendClick: (legendEntry) => this.legendFunctionality(legendEntry), legacy_mode: config.legacy_mode });
         this.data = new isg.Data();
         if (this.config.edit && this.config.legacy_mode) mwjson.parser.init(); //start loading parser
 
