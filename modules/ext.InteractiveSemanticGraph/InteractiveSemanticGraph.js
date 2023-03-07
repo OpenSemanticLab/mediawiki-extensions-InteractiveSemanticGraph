@@ -36,7 +36,7 @@ isg.Graph = class {
         this.config = config;
         this.ui = new isg.UI(this.container, { onLegendClick: (legendEntry) => this.legendFunctionality(legendEntry) });
         this.data = new isg.Data();
-        if (this.config.edit) mwjson.parser.init(); //start loading parser
+        if (this.config.edit && this.config.legacy_mode) mwjson.parser.init(); //start loading parser
 
         this.first_call = true;
 
@@ -616,7 +616,8 @@ isg.Graph = class {
             data.url = result.fullurl;
         }
         else {
-            data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create a new UUID page in the Term namespace
+            if (this.config.legacy_mode) data.id = "Term:OSL" + isg.util.uuidv4().replaceAll('-', ''); //create a new UUID page in the Term namespace
+            else data.id = "Item:" + mwjson.util.OswId();
             data.url = "/wiki/" + data.id;
         }
         data.hidden = false;
@@ -731,17 +732,35 @@ isg.Graph = class {
                 var page = await mwjson.api.getPage(obj.id);
                 if (!page.exists) { //create page with default content
                     page.title = obj.id;
-                    page.dict = [{
-                        'OslTemplate:KB/Term': {
-                            'label': obj.label,
-                            'label_lang_code': 'en',
-                            'description': "",
-                            'relations': []
+                    if (this.config.legacy_mode) {
+                        page.dict = [{
+                            'OslTemplate:KB/Term': {
+                                'label': obj.label,
+                                'label_lang_code': 'en',
+                                'description': "",
+                                'relations': []
+                            }
                         }
+                            , "\n=Details=\n\n",
+                        { 'OslTemplate:KB/Term/Footer': {} }
+                        ];
                     }
-                        , "\n=Details=\n\n",
-                    { 'OslTemplate:KB/Term/Footer': {} }
-                    ];
+                    else {
+                        page.slots['jsondata'] = {
+                            "type": [
+                                "Category:Item"
+                            ],
+                            "uuid": mwjson.util.uuidv4(obj.id),
+                            "name": mwjson.util.toPascalCase(obj.label),
+                            "label": [
+                                {
+                                    "text": obj.label,
+                                    "lang": "en"
+                                }
+                            ],
+                        };
+                        page.slots_changed['jsondata'] = true;
+                    }
                     this.data.editNodes[obj.id] = page; //store page state
                 }
             }
@@ -750,44 +769,78 @@ isg.Graph = class {
         if (!this.data.editNodes[sub.id]) { //subject page not handled yet
             page = await mwjson.api.getPage(sub.id);
             if (page.exists) {
-                await mwjson.parser.init();
-                mwjson.parser.parsePage(page);
-                if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                    //there is already a KB/Term Template
-                } else {
-                    console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
-                    mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
-                        'label': sub.label,
-                        'label_lang_code': 'en',
-                        'description': "",
-                        'relations': []
+                if (this.config.legacy_mode) {
+                    await mwjson.parser.init();
+                    mwjson.parser.parsePage(page);
+                    if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
+                        //there is already a KB/Term Template
+                    } else {
+                        console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                        mwjson.parser.appendTemplate(page, 'OslTemplate:KB/Term', {
+                            'label': sub.label,
+                            'label_lang_code': 'en',
+                            'description': "",
+                            'relations': []
+                        }
+                        );
                     }
-                    );
                 }
             }
             else { //create page with default content
                 page.title = sub.id;
-                page.dict = [{
-                    'OslTemplate:KB/Term': {
-                        'label': sub.label,
-                        'label_lang_code': 'en',
-                        'description': "",
-                        'relations': []
-                    }
-                },
-                    "\n=Details=\n\n",
-                { 'OslTemplate:KB/Term/Footer': {} }
-                ];
+                if (this.config.legacy_mode) {
+                    page.dict = [{
+                        'OslTemplate:KB/Term': {
+                            'label': sub.label,
+                            'label_lang_code': 'en',
+                            'description': "",
+                            'relations': []
+                        }
+                    },
+                        "\n=Details=\n\n",
+                    { 'OslTemplate:KB/Term/Footer': {} }
+                    ];
+                }
+                else {
+                    page.slots['jsondata'] = {
+                        "type": [
+                            "Category:Item"
+                        ],
+                        "uuid": mwjson.util.uuidv4(sub.id),
+                        "name": mwjson.util.toPascalCase(sub.label),
+                        "label": [
+                            {
+                                "text": sub.label,
+                                "lang": "en"
+                            }
+                        ],
+                        "statements": []
+                    };
+                    page.slots_changed['jsondata'] = true;
+                }
             }
             this.data.editNodes[sub.id] = page; //store page state    
         }
         else page = this.data.editNodes[sub.id]; //use stored state
-        mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
-            'OslTemplate:KB/Relation': {
-                'property': property,
-                'value': property_value
-            }
-        });
+        if (this.config.legacy_mode) {
+            mwjson.parser.append_to_template_param(page, 'OslTemplate:KB/Term', ['relations'], {
+                'OslTemplate:KB/Relation': {
+                    'property': property,
+                    'value': property_value
+                }
+            });
+        }
+        else {
+            if (mwjson.util.isString(page.slots['jsondata'])) page.slots['jsondata'] = JSON.parse(page.slots['jsondata']);
+            if (!page.slots['jsondata']['statements']) page.slots['jsondata']['statements'] = [];
+            page.slots['jsondata']['statements'].push({
+                'uuid': mwjson.util.uuidv4(),
+                'label': [{'text': ".. " + property + " ..", 'lang': "en"}],
+                'predicate': "Property:" + property,
+                'object': property_value
+            })
+            page.slots_changed['jsondata'] = true;
+        }
         this.data.editNodes[sub.id] = page; //update stored page state    
 
         //console.log(sub);
@@ -865,21 +918,36 @@ isg.Graph = class {
         if (!this.data.editNodes[sub]) { //subject page not handled yet
             page = await mwjson.api.getPage(sub);
             if (page.exists) {
-                await mwjson.parser.init();
-                mwjson.parser.parsePage(page);
-                if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
-                    //there is already a KB/Term Template
-                } else {
-                    console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                if (this.config.legacy_mode) {
+                    await mwjson.parser.init();
+                    mwjson.parser.parsePage(page);
+                    if (page.content.search(/(\{\{OslTemplate:KB\/Term[^}]*[\r\n]*\}[\r\n]*\})/g) >= 0) {
+                        //there is already a KB/Term Template
+                    } else {
+                        console.log(`WARNING: page ${sub.id} exits but is not a Semantic Term`);
+                    }
                 }
-
             }
             this.data.editNodes[sub] = page; //store page state   
         }
         else page = this.data.editNodes[sub]; //use stored state
         if (page.exists) {
-            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': property, 'value': obj }, {}); //delete relation
-            mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': "Property:" + property, 'value': obj }, {}); //delete relation with property NS
+            if (this.config.legacy_mode) {
+                mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': property, 'value': obj }, {}); //delete relation
+                mwjson.parser.update_template_subparam_by_match(page, "OslTemplate:KB/Term", ["relations"], { 'property': "Property:" + property, 'value': obj }, {}); //delete relation with property NS
+            }
+            else {
+                if (mwjson.util.isString(page.slots['jsondata'])) page.slots['jsondata'] = JSON.parse(page.slots['jsondata']);
+                if (!page.slots['jsondata']['statements']) page.slots['jsondata']['statements'] = [];
+                console.log(page.slots['jsondata']['statements']);
+                page.slots['jsondata']['statements'] = page.slots['jsondata']['statements'].filter(function (statement) {
+                    var p = statement.predicate === "Property:" + property;
+                    var o = statement.object === obj
+                    return !(p && o);
+                });
+                console.log(page.slots['jsondata']['statements']);
+                page.slots_changed['jsondata'] = true;
+            }
             this.data.editNodes[sub] = page; //store page state   
         } else {
             console.log(`ERROR: subject page ${sub.id} does not exist`);

@@ -21,6 +21,7 @@ $(document).ready(function () {
             if ($('.InteractiveSemanticGraph').length) { //check if div element(s) exist
 
                 var defaultOptions = { "root": "", "properties": [], "ignore_properties": [], "permalink": false, "sync_permalink": false, "edit": false, "hint": false, "treat_non_existing_pages_as_literals": false, "edge_labels": true };
+                defaultOptions.legacy_mode = mw.config.get( 'wgPageName' ).split(":")[0] === "Term";
                 var userOptions = {};
 
                 if (this.dataset.config) userOptions = JSON.parse(this.dataset.config);
