@@ -746,6 +746,14 @@ isg.Graph = class {
                         ];
                     }
                     else {
+                        if (page.slots['header'] !== "{{#invoke:Entity|header}}") {
+                            page.slots['header'] = "{{#invoke:Entity|header}}"
+                            page.slots_changed['header'] = true;
+                        }
+                        if (page.slots['footer'] !== "{{#invoke:Entity|footer}}") {
+                            page.slots['footer'] = "{{#invoke:Entity|footer}}"
+                            page.slots_changed['footer'] = true;
+                        }
                         page.slots['jsondata'] = {
                             "type": [
                                 "Category:Item"
@@ -802,6 +810,14 @@ isg.Graph = class {
                     ];
                 }
                 else {
+                    if (page.slots['header'] !== "{{#invoke:Entity|header}}") {
+                        page.slots['header'] = "{{#invoke:Entity|header}}"
+                        page.slots_changed['header'] = true;
+                    }
+                    if (page.slots['footer'] !== "{{#invoke:Entity|footer}}") {
+                        page.slots['footer'] = "{{#invoke:Entity|footer}}"
+                        page.slots_changed['footer'] = true;
+                    }
                     page.slots['jsondata'] = {
                         "type": [
                             "Category:Item"
