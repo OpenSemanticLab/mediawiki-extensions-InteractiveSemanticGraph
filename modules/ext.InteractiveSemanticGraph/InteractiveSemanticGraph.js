@@ -34,6 +34,7 @@ isg.Graph = class {
     constructor(container, config) {
         this.container = container
         this.config = config;
+        this.config.show_menu = this.config.show_menu || true;
         this.ui = new isg.UI(this.container, { onLegendClick: (legendEntry) => this.legendFunctionality(legendEntry), legacy_mode: config.legacy_mode });
         this.data = new isg.Data();
         if (this.config.edit && this.config.legacy_mode) mwjson.parser.init(); //start loading parser
@@ -166,6 +167,7 @@ isg.Graph = class {
         if (this.config.edit) {
             this.saveButton = this.ui.createSaveButton();
             this.saveButton.addEventListener("click", () => this.data.saveGraphChanges());
+            if (!this.config.show_menu) this.saveButton.style.display = "none";
         }
 
         //permalink button
@@ -178,6 +180,14 @@ isg.Graph = class {
                 isg.util.copyToClipboad(window.location);
             });
         }
+
+        //reset view button
+        this.resetViewButton = this.ui.createResetViewButton();
+        this.resetViewButton.addEventListener("click", () => {
+            this.network.redraw();
+            this.network.fit();
+        });
+        if (!this.config.show_menu) this.resetViewButton.style.display = "none";
     }
 
     getDefaultOptions() {
@@ -359,7 +369,7 @@ isg.Graph = class {
             }
         });
 
-        this.network.on("doubleClick", (params) => {
+        this.network.on("doubleClick", (params) => {  
             if (params.nodes[0]) {
                 //Checks if all node children are created from context menu or manually, if so it creates nodes for before defined properties else it deletes all children
                 var conManNodes = this.network.getConnectedNodes(params.nodes[0], 'to');
@@ -402,7 +412,7 @@ isg.Graph = class {
         document.body.append(ul);
 
         //On a node right click it puts out all properties of the clicked node and a link to the node wiki-page
-        this.network.on("oncontext", (params) => {
+        this.network.on("oncontext", (params) => {         
             params.event.preventDefault();
             var timeNow = Date.now();
             var timeDiff = timeNow - this.start

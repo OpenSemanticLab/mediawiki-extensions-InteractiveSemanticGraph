@@ -213,25 +213,30 @@ isg.UI = class {
     }
 
     createPermalinkButton() {
-        var permalinkButton = document.createElement("button");
-
-        permalinkButton.innerHTML = "Copy permalink";
-        permalinkButton.style.width = "auto";
-        permalinkButton.style.height = "auto";
-        permalinkButton.style.float = "right";
-        this.container_header.appendChild(permalinkButton);
-        return permalinkButton;
+        var btn = document.createElement("button");
+        btn.innerHTML = "Copy permalink";
+        btn.style.float = "right";
+        btn.classList.add('isg-button-permalink');
+        this.container_header.appendChild(btn);
+        return btn;
     }
 
     createSaveButton() {
-        var saveBtn = document.createElement("button");
+        var btn = document.createElement("button");
+        btn.innerHTML = "Save changes";
+        btn.style.float = "right";
+        btn.classList.add('isg-button-save');
+        this.container_header.appendChild(btn);
+        return btn;
+    }
 
-        saveBtn.innerHTML = "Save changes";
-        saveBtn.style.width = "auto";
-        saveBtn.style.height = "auto";
-        saveBtn.style.float = "right";
-        this.container_header.appendChild(saveBtn);
-        return saveBtn;
+    createResetViewButton() {
+        var btn = document.createElement("button");
+        btn.innerHTML = "Reset view";
+        btn.style.float = "right";
+        btn.classList.add('isg-button-reset-view');
+        this.container_header.appendChild(btn);
+        return btn;
     }
 
     createInfoDialog(text) {
