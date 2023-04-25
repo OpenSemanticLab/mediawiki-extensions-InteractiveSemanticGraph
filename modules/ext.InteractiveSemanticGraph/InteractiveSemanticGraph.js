@@ -155,6 +155,8 @@ isg.Graph = class {
 
     initUi() {
 
+        this.ui.init(); //visnetwork will remove all child elements, so we call this after creating the visnetwork instance
+
         if (this.config.hint) this.ui.createInfoSection();
 
         //create legend

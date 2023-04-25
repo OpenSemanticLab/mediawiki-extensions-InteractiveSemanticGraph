@@ -10,8 +10,10 @@ isg.UI = class {
         this.config = config;
         this.container = container;
         this.container.style.position = "relative";
-        this.container.style.display = "inline-block";
-        this.init();
+        this.container.style.display = "flex";
+        this.container.style['align-items'] = "center";
+        this.container.style['flex-direction'] = "column";
+        //this.init(); //visnetwork will remove all child elements, so we call this later
     }
 
     init() {
@@ -42,9 +44,9 @@ isg.UI = class {
     createLegend(properties, colors) {
         this.legendDiv = document.createElement("div");
 
-        this.legendDiv.style.width = '100%';
+        //this.legendDiv.style.width = '100%';
         this.legendDiv.style.position = 'relative';
-        this.legendDiv.style.display = 'inline-block';
+        this.legendDiv.style.display = 'flex';
         this.legendDiv.id = "legendContainer";
         var legendColors = {};
 
@@ -108,6 +110,11 @@ isg.UI = class {
     }
 
     createEditorElements() {
+
+        this.container_header = document.createElement("div");
+        this.container_header.style.width = "100%";
+        this.container.prepend(this.container_header);
+
         //HTML for the manipulation popups
         var editHtml = '' +
             '<div id="node-popUp" style="width: 550px; height: 200px;">' +
@@ -211,7 +218,8 @@ isg.UI = class {
         permalinkButton.innerHTML = "Copy permalink";
         permalinkButton.style.width = "auto";
         permalinkButton.style.height = "auto";
-        this.container.appendChild(permalinkButton);
+        permalinkButton.style.float = "right";
+        this.container_header.appendChild(permalinkButton);
         return permalinkButton;
     }
 
@@ -221,7 +229,8 @@ isg.UI = class {
         saveBtn.innerHTML = "Save changes";
         saveBtn.style.width = "auto";
         saveBtn.style.height = "auto";
-        this.container.appendChild(saveBtn);
+        saveBtn.style.float = "right";
+        this.container_header.appendChild(saveBtn);
         return saveBtn;
     }
 
