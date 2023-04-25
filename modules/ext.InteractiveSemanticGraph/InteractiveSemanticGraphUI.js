@@ -60,32 +60,22 @@ isg.UI = class {
     }
 
     addLegendEntry(id, label, color) {
-        var propertyContainer = document.createElement("div");
-        var propertyColor = document.createElement("div");
-        var propertyName = document.createElement("div");
-        propertyContainer.className = "legend-element-container";
-        propertyContainer.id = id;
-        propertyColor.className = "color-container";
-        propertyName.className = "name-container";
-        propertyColor.style.float = "left";
-        propertyName.style.float = "left";
-        propertyColor.style.border = "1px solid black";
-        propertyName.style.border = "1px solid black";
-        propertyColor.style.background = color;
-        propertyColor.innerHTML = "";
-        propertyName.innerHTML = label;
-        propertyColor.style.width = "30px";
-        propertyColor.style.height = "30px";
-        propertyName.style.height = "30px";
-        propertyName.style.background = '#DEF';
-        propertyContainer.dataset.active = true;
-        //propertyName.text-align = 'center';
-        propertyContainer.paddinng = '5px 5px 5px 5px';
-        propertyName.addEventListener("click", event => this.dispatchEvent_LegendClick(event, id));
-        propertyColor.addEventListener("click", event => this.dispatchEvent_LegendClick(event, id));
-        this.legendDiv.append(propertyContainer);
-        propertyContainer.append(propertyColor);
-        propertyContainer.append(propertyName);
+        
+        var container = document.createElement("button");
+        container.className = "legend-element-container";
+        container.classList.add('btn', 'btn-outline-light');
+        container.id = id;
+        container.style.color = "black";
+        container.style.background = color;
+        container.innerHTML = label;
+
+        container.dataset.active = true;
+        container.dataset.active_color = color;
+
+        container.addEventListener("click", event => this.dispatchEvent_LegendClick(event, id));
+
+        this.legendDiv.append(container);
+
     }
 
     dispatchEvent_LegendClick(event, id) {
@@ -95,11 +85,11 @@ isg.UI = class {
 
         if (container.dataset.active === 'true') {
             container.dataset.active = false;
-            propertyName.style.background = '#FFFFFF';
+            container.style.background = '#FFFFFF';
         }
         else {
             container.dataset.active = true;
-            propertyName.style.background = '#DEF';
+            container.style.background = container.dataset.active_color;
         }
         // create and dispatch the event
         if (this.config.onLegendClick) this.config.onLegendClick(id);
@@ -217,6 +207,7 @@ isg.UI = class {
         btn.innerHTML = "Copy permalink";
         btn.style.float = "right";
         btn.classList.add('isg-button-permalink');
+        btn.classList.add('btn', 'btn-light');
         this.container_header.appendChild(btn);
         return btn;
     }
@@ -226,6 +217,7 @@ isg.UI = class {
         btn.innerHTML = "Save changes";
         btn.style.float = "right";
         btn.classList.add('isg-button-save');
+        btn.classList.add('btn', 'btn-primary');
         this.container_header.appendChild(btn);
         return btn;
     }
@@ -235,6 +227,7 @@ isg.UI = class {
         btn.innerHTML = "Reset view";
         btn.style.float = "right";
         btn.classList.add('isg-button-reset-view');
+        btn.classList.add('btn', 'btn-light');
         this.container_header.appendChild(btn);
         return btn;
     }
