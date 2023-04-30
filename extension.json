@@ -14,7 +14,7 @@
     "requires":{
         "MediaWiki":">= 1.31",
         "extensions": {
-			"MwJson": ">= 0.2.4"
+			"MwJson": ">= 0.2.5"
 		}
     },
     "MessagesDirs":{

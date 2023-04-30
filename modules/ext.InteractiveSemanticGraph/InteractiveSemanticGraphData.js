@@ -6,12 +6,12 @@ isg.Data = class {
     editDeletedNodes = {};
     editTargetNodes = []; 
 
-    constructor(container) {
+    constructor(config) {
         // create an array with nodes
         this.nodes = new vis.DataSet([]);
         // create an array with edges
         this.edges = new vis.DataSet([]);
-
+	this.config = config || {}; //{uri_color_map: {"http://emmo.info/emmo#":  "blue"}};
     }
 
     //The function nodeExists() returns true, if the given node already exists, else false
@@ -114,6 +114,13 @@ isg.Data = class {
                             shape = "image";
                             label = "";
                         }
+
+			var uri = data.query.results[root].printouts[properties[i] + ".Equivalent URI"][j + labelOffset]; 
+			if (uri && this.config.uri_color_map) {
+				for (const key in this.config.uri_color_map) {
+					if (uri.startsWith(key)) nodeColor = this.config.uri_color_map[key];
+				}
+			}
 
                         //if (!input.edge_labels) edgeLabel = undefined; //some features depend on the labels, so we can't simple remove them
 

@@ -36,7 +36,7 @@ isg.Graph = class {
         this.config = config;
         this.config.show_menu = this.config.show_menu || true;
         this.ui = new isg.UI(this.container, { onLegendClick: (legendEntry) => this.legendFunctionality(legendEntry), legacy_mode: config.legacy_mode });
-        this.data = new isg.Data();
+        this.data = new isg.Data(this.config);
         if (this.config.edit && this.config.legacy_mode) mwjson.parser.init(); //start loading parser
 
         this.first_call = true;
@@ -63,7 +63,7 @@ isg.Graph = class {
         this.config.normalizedProperties = [...new Set(this.config.normalizedProperties)]; //remove duplicates
         this.randomColor = new isg.util.Color();
 
-        
+	//this.config.uri_color_map = {"gpo": "red"};        
 
 
 

@@ -32,6 +32,7 @@ isg.util = class {
             propertiesVar += '|?' + encodeURIComponent(properties[i]) + "=" + encodeURIComponent(properties[i]); //explicit label overwrites property display title. ToDo: extrakt label in result and get corresponding printout
             propertiesVar += '|?' + encodeURIComponent(properties[i] + ".Display title of") + "=" + encodeURIComponent(properties[i] + ".Display title of"); //explicit query for display title due to slow update of the displaytitle page field 
             //propertiesVar += '|?' + encodeURIComponent(properties[i] + ".HasLabel#LOCL") + "=" + encodeURIComponent(properties[i] + ".HasLabel"); //explicit query for label in user language 
+	    propertiesVar += '|?' + encodeURIComponent(properties[i] + ".Equivalent URI") + "=" + encodeURIComponent(properties[i] + ".Equivalent URI");
         }
         url = url + propertiesVar + '&format=json';
         return url;
