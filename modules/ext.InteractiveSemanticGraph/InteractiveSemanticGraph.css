@@ -49,6 +49,10 @@ padding: 10px;
 text-align: center;
 }
 
+#node-popUp_ table {
+  overflow: unset;
+}
+
 #edge-popUp {
 display: none;
 position: absolute;
@@ -63,4 +67,8 @@ border-width: 3px;
 border-color: #5394ed;
 padding: 10px;
 text-align: center;
+}
+
+#edge-popUp_ table {
+  overflow: unset;
 }
