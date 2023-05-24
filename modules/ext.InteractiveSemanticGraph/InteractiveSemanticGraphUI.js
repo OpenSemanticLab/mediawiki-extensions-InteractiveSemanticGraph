@@ -106,35 +106,47 @@ isg.UI = class {
         this.container.prepend(this.container_header);
 
         //HTML for the manipulation popups
-        var editHtml = '' +
-            '<div id="node-popUp" style="width: 550px; height: 200px;">' +
-            '  <span id="node-operation" style="cursor: move;">node</span> <br />' +
-            '  <table style="margin: auto">' +
-            '    <tbody>' +
-            '      <tr>' +
-            '        <td>label</td>' +
-            '        <td><div id="isg-node-label-autocomplete"><input id="node-label" class="autocomplete-input" style="width: 480px;" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
-            '      </tr>' +
-            '    </tbody>' +
-            '  </table>' +
-            '  <input type="button" value="save" id="node-saveButton" />' +
-            '  <input type="button" value="cancel" id="node-cancelButton" />' +
-            '</div>' +
-            '' +
-            '<div id="edge-popUp" style="width: 350px; height: 200px;">' +
-            '  <span id="edge-operation" style="cursor: move;">edge</span> <br />' +
-            '  <table style="margin: auto">' +
-            '    <tbody>' +
-            '      <tr>' +
-            '        <td>label</td>' +
-            '        <td><div id="isg-edge-label-autocomplete"><input id="edge-label" class="autocomplete-input" style="width: 280px;" value="" /></input><ul class="autocomplete-result-list"></ul></div></td>' +
-            '      </tr>' +
-            '    </tbody>' +
-            '  </table>' +
-            '  <input type="button" value="save" id="edge-saveButton" />' +
-            '  <input type="button" value="cancel" id="edge-cancelButton" />' +
-            '</div>' +
-            '';
+        var editHtml = `
+        <div id="node-popUp" class="isg-popup" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <span id="node-operation" style="cursor: move;">node</span> <br />
+                </div>
+                <div class="modal-body" style="width: 480px;">
+                    <div id="isg-node-label-autocomplete">
+                        <input id="node-label" class="autocomplete-input" value="" placeholder="Label" /></input>
+                        <ul class="autocomplete-result-list"></ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="node-saveButton" type="button" class="btn btn-primary">Save</button>
+                    <button id="node-cancelButton" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+                </div>
+            </div>
+        </div>
+        <div id="edge-popUp" class="isg-popup" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <span id="edge-operation" style="cursor: move;">edge</span>
+                </div>
+                <div class="modal-body" style="width: 480px;">
+                    <div id="isg-edge-label-autocomplete">
+                        <input id="edge-label" class="autocomplete-input" value="" placeholder="Label" /></input>
+                        <ul class="autocomplete-result-list"></ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="edge-saveButton" type="button" class="btn btn-primary">Save</button>
+                    <button id="edge-cancelButton" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+                </div>
+            </div>
+        </div>
+        `;
+
         var editHtmlDiv = document.createElement("div");
         editHtmlDiv.innerHTML = editHtml;
         document.body.appendChild(editHtmlDiv);
