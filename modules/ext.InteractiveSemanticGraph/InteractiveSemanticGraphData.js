@@ -200,7 +200,7 @@ isg.Data = class {
                 });
 
                 for (const [key, page] of Object.entries(this.editNodes)) {
-                    mwjson.parser.updateContent(page);
+                    if (this.config.legacy_mode) mwjson.parser.updateContent(page);
                     var promise = mwjson.api.updatePage(page, "Edited with InteractiveSemanticGraph");
                     promises.push(promise);
                     promise.then((page) => {
