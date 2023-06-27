@@ -163,7 +163,7 @@ isg.UI = class {
             minInputLen: 1,
             filter: (result, input) => {
                 if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase());
-                else return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase());
+                else return mwjson.util.stripNamespace(result.fulltext).toLowerCase().includes(input.toLowerCase());
             },
             _renderResult: (result, props) => `
                             <li ${props}>
@@ -185,7 +185,7 @@ isg.UI = class {
             },
             getResultValue: result => {
                 if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0];
-                else return result.fulltext.split(":")[result.fulltext.split(":").length - 1];
+                else return mwjson.util.stripNamespace(result.fulltext);
             },
             onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
         });
@@ -193,7 +193,7 @@ isg.UI = class {
         mwjson.editor.createAutocompleteInput({
             div_id: "isg-edge-label-autocomplete",
             query: (input) => { return "[[Category:Property]][[Has_type::Page]]|?Display_title_of=HasDisplayName|?HasDescription|limit=1000"; },
-            filter: (result, input) => { return result.fulltext.split(":")[result.fulltext.split(":").length - 1].toLowerCase().includes(input.toLowerCase()); },
+            filter: (result, input) => { return mwjson.util.stripNamespace(result.fulltext).toLowerCase().includes(input.toLowerCase()); },
             _renderResult: (result, props) => `
                             <li ${props}>
                                 <div class="wiki-title">
@@ -209,7 +209,7 @@ isg.UI = class {
                 if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
                 return wikitext;
             },
-            getResultValue: result => result.fulltext.split(":")[result.fulltext.split(":").length - 1],
+            getResultValue: result => mwjson.util.stripNamespace(result.fulltext),
             onSubmit: result => document.querySelector('#edge-label').dataset.result = JSON.stringify(result)
         });
     }
