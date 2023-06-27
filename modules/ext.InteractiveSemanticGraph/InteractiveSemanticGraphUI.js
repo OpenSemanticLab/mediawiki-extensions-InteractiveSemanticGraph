@@ -165,22 +165,35 @@ isg.UI = class {
                 if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase());
                 else return mwjson.util.stripNamespace(result.fulltext).toLowerCase().includes(input.toLowerCase());
             },
-            _renderResult: (result, props) => `
+            _renderResult: (result, props) => {
+                            let description = "";
+                            if (result.printouts['HasDescription'][0]) {
+                                description = result.printouts['HasDescription'][0];
+                                if (description.fulltext) description = description.fulltext; // unconfigured property => type = Page
+                                if (description.Text && description.Text.item && description.Text.item[0]) description = description.Text.item[0]; //multi lang text
+                            }
+                            return `
                             <li ${props}>
                                 <div class="wiki-title">
                                     ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : result.fulltext}
                                 </div>
                             </li>
                             <div class="wiki-snippet">
-                                ${result.printouts['HasDescription'][0] ? result.printouts['HasDescription'][0] : ''}
+                                ${description}
                             </div>
-                            `,
+                            `},
             renderMode: "wikitext",
             renderResult: (result, props) => {
+                let description = "";
+                if (result.printouts['HasDescription'][0]) {
+                    description = result.printouts['HasDescription'][0];
+                    if (description.fulltext) description = description.fulltext; // unconfigured property => type = Page
+                    if (description.Text && description.Text.item && description.Text.item[0]) description = description.Text.item[0]; //multi lang text
+                }
                 var wikitext = "";
                 if (result.printouts['HasImage'][0]) wikitext += `[[${result.printouts['HasImage'][0]['fulltext']}|right|x66px|link=]]`;
                 wikitext += `</br> [[${result.fulltext}]]`;
-                if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
+                if (description) wikitext += `</br>${description}`;
                 return wikitext;
             },
             getResultValue: result => {
@@ -194,19 +207,32 @@ isg.UI = class {
             div_id: "isg-edge-label-autocomplete",
             query: (input) => { return "[[Category:Property]][[Has_type::Page]]|?Display_title_of=HasDisplayName|?HasDescription|limit=1000"; },
             filter: (result, input) => { return mwjson.util.stripNamespace(result.fulltext).toLowerCase().includes(input.toLowerCase()); },
-            _renderResult: (result, props) => `
+            _renderResult: (result, props) => {
+                            let description = undefined;
+                            if (result.printouts['HasDescription'][0]) {
+                                description = result.printouts['HasDescription'][0];
+                                if (description.fulltext) description = description.fulltext; // unconfigured property => type = Page
+                                if (description.Text && description.Text.item && description.Text.item[0]) description = description.Text.item[0]; //multi lang text
+                            }
+                            return`
                             <li ${props}>
                                 <div class="wiki-title">
                                     ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : mwjson.util.stripNamespace(result.fulltext)}
                                 </div>
                             </li>
-                            ${result.printouts['HasDescription'][0] ? '<div class="wiki-snippet">' + result.printouts['HasDescription'][0] + '</div>' : ''}
-                            `,
+                            ${description ? '<div class="wiki-snippet">' + description + '</div>' : ''}
+                            `},
             renderMode: "wikitext",
             renderResult: (result, props) => {
+                let description = undefined;
+                if (result.printouts['HasDescription'][0]) {
+                    description = result.printouts['HasDescription'][0];
+                    if (description.fulltext) description = description.fulltext; // unconfigured property => type = Page
+                    if (description.Text && description.Text.item && description.Text.item[0]) description = description.Text.item[0]; //multi lang text
+                }
                 var wikitext = "";
                 wikitext += `[[${result.fulltext}|${mwjson.util.stripNamespace(result.fulltext)}]]`;
-                if (result.printouts['HasDescription'][0]) wikitext += `</br>${result.printouts['HasDescription'][0]}`;
+                if (description) wikitext += `</br>${description}`;
                 return wikitext;
             },
             getResultValue: result => mwjson.util.stripNamespace(result.fulltext),
