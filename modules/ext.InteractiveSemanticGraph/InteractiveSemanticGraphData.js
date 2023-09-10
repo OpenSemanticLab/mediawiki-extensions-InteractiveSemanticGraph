@@ -110,7 +110,7 @@ isg.Data = class {
                         var shape = undefined;
                         var image = undefined;
                         if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif"))) {
-                            image = `/w/index.php?title=Special:Redirect/file/${id.replace("File:", "")}&width=200&height=200`;
+                            image = mw.config.get("wgScriptPath") + `/index.php?title=Special:Redirect/file/${id.replace("File:", "")}&width=200&height=200`;
                             shape = "image";
                             label = "";
                         }
@@ -171,7 +171,7 @@ isg.Data = class {
     fetchPropertyType(property) {
         property = "Property:" + property;
         const deferred = $.Deferred();
-        fetch("/w/api.php?action=ask&query=[[" + property + "]]|?Has_type=type&format=json")
+        fetch(mw.config.get("wgScriptPath") + "/api.php?action=ask&query=[[" + property + "]]|?Has_type=type&format=json")
             .then(response => response.json())
             .then(data => {
                 if (data.query.results[property].printouts["type"]) {

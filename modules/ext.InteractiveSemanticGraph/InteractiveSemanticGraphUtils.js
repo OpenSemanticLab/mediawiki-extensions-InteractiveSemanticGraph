@@ -25,7 +25,7 @@ isg.util = class {
     static getSmwQuery(root, properties) {
         if (properties[0] === "-Category") properties[0] = "Category";
         else if (root.startsWith("Category:")) root = ":" + root; //[[Category:X]] queries pages within this category, [[:Category:X]] the category itself
-        var url = `/w/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
+        var url = mw.config.get("wgScriptPath") + `/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
         var propertiesVar = '';
         propertiesVar += '|?' + ".Display title of" + "=" + "Display title of"; //explicit query for display title due to slow update of the displaytitle page field 
         for (var i = 0; i < properties.length; i++) {
