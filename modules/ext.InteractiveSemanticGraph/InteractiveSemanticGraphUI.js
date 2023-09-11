@@ -44,9 +44,7 @@ isg.UI = class {
     createLegend(properties, colors) {
         this.legendDiv = document.createElement("div");
 
-        //this.legendDiv.style.width = '100%';
         this.legendDiv.style.position = 'relative';
-        this.legendDiv.style.display = 'flex';
         this.legendDiv.id = "legendContainer";
         var legendColors = {};
 
@@ -80,9 +78,7 @@ isg.UI = class {
 
     dispatchEvent_LegendClick(event, id) {
         //toogle color
-        console.log("Toogle", id);
-        var container = document.querySelector('#' + id);
-        var propertyName = $(container).find('.name-container')[0];
+        var container = $(this.legendDiv).find('#' + id)[0];
 
         if (container.dataset.active === 'true') {
             container.dataset.active = false;
