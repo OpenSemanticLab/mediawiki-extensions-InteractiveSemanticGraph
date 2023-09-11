@@ -80,6 +80,7 @@ isg.UI = class {
 
     dispatchEvent_LegendClick(event, id) {
         //toogle color
+        console.log("Toogle", id);
         var container = document.querySelector('#' + id);
         var propertyName = $(container).find('.name-container')[0];
 
