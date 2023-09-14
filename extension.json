@@ -1,7 +1,7 @@
 {
     "manifest_version":2,
     "name":"InteractiveSemanticGraph",
-    "version":"0.0.1",
+    "version":"0.1.12",
     "author":[
         "[https://github.com/simontaurus Simon Stier]",
         "[https://github.com/AlexanderPraktikum2021 Alexander Triol]"
@@ -14,7 +14,7 @@
     "requires":{
         "MediaWiki":">= 1.31",
         "extensions": {
-			"MwJson": "*"
+			"MwJson": ">= 0.2.5"
 		}
     },
     "MessagesDirs":{
@@ -32,9 +32,12 @@
             "scripts":[
                 "vis-network.min.js",
                 "InteractiveSemanticGraph.js",
+                "InteractiveSemanticGraphData.js",
+                "InteractiveSemanticGraphUI.js",
                 "InteractiveSemanticGraphUtils.js",
                 "split-grid.min.js",
-                "InteractiveSemanticGraphBrowser.js"
+                "InteractiveSemanticGraphBrowser.js",
+                "InteractiveSemanticGraph_init.js"
             ],
             "position":"bottom"
         }
