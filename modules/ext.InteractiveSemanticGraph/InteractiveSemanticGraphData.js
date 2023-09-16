@@ -109,7 +109,8 @@ isg.Data = class {
                         if (isLiteral) nodeColor = "#FFFFFF";
                         var shape = undefined;
                         var image = undefined;
-                        if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif"))) {
+                        var id_lc = id.toLowerCase();
+                        if (id.includes("File:") && (id_lc.includes(".png") || id_lc.includes(".jpeg") || id_lc.includes(".jpg") || id_lc.includes(".tif") || id_lc.includes(".pdf") || id_lc.includes(".bmp") || id_lc.includes(".svg") || id_lc.includes(".gif"))) {
                             image = mw.config.get("wgScriptPath") + `/index.php?title=Special:Redirect/file/${id.replace("File:", "")}&width=200&height=200`;
                             shape = "image";
                             label = "";
