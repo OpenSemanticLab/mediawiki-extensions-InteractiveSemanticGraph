@@ -22,7 +22,11 @@ isg.util = class {
     }
 
     //Creates API query Url with the given root and properties
-    static getSmwQuery(root, properties) {
+    //root: string - the root node title
+    //properties: list - the property list to query
+    //config: dict
+    //  query_limit: int - max results
+    static getSmwQuery(root, properties, config) {
         if (properties[0] === "-Category") properties[0] = "Category";
         else if (root.startsWith("Category:")) root = ":" + root; //[[Category:X]] queries pages within this category, [[:Category:X]] the category itself
         var url = mw.config.get("wgScriptPath") + `/api.php?action=ask&query=[[${encodeURIComponent(root)}]]`;
@@ -34,7 +38,9 @@ isg.util = class {
             //propertiesVar += '|?' + encodeURIComponent(properties[i] + ".HasLabel#LOCL") + "=" + encodeURIComponent(properties[i] + ".HasLabel"); //explicit query for label in user language 
 	    propertiesVar += '|?' + encodeURIComponent(properties[i] + ".Equivalent URI") + "=" + encodeURIComponent(properties[i] + ".Equivalent URI");
         }
-        url = url + propertiesVar + '&format=json';
+        url = url + propertiesVar;
+        if (config.query_limit) url += "|limit=" + config.query_limit;
+        url += '&format=json';
         return url;
     }
 
