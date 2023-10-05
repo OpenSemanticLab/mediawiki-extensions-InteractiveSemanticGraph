@@ -643,14 +643,34 @@ isg.Graph = class {
             else data.id = "Item:" + mwjson.util.OswId();
             data.url = "/wiki/" + data.id;
         }
-        data.hidden = false;
-        data.physics = false;
-        //console.log(data);
-        input_element.value = "";
-        input_element.dataset.result = "";
-        this.clearNodePopUp();
-        callback(data);
-        this.create_link();
+
+        var node = this.data.nodes.get(data.id)
+        if (node) {
+            OO.ui.confirm('Node already exists in the graph. Do you want to navigate to its position?').done((confirmed) => {
+                if (confirmed) {
+                var pos = this.network.getPosition(data.id);
+                if (pos.x && pos.y) {
+                    input_element.value = "";
+                    input_element.dataset.result = "";
+                    this.clearNodePopUp();
+                    this.network.moveTo(pos)
+                    this.network.fit({ animation: true })
+                }
+                }
+            });
+        }
+        else {
+            data.hidden = false;
+            data.physics = false;
+            //console.log(data);
+            callback(data);
+            this.create_link();
+            input_element.value = "";
+            input_element.dataset.result = "";
+            this.clearNodePopUp();
+        }
+
+        
     }
     //addEdge popup
     editEdgeWithoutDrag(data, callback) {
