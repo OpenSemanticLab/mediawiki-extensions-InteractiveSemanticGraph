@@ -680,8 +680,7 @@ isg.Graph = class {
                         input_element.value = "";
                         input_element.dataset.result = "";
                         this.clearNodePopUp();
-                        this.network.moveTo(pos)
-                        this.network.fit({ animation: true })
+                        this.network.moveTo({position: pos, animation: true});
                     }
                 }
             });
