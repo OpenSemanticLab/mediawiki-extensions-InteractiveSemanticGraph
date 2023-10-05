@@ -520,6 +520,33 @@ isg.Graph = class {
                 }
             }
         });
+
+        this.network.on("dragEnd", (params) => {
+            console.log("DragEnd");
+            params.nodes.forEach((nodeId) => {
+                const node = this.data.nodes.get(nodeId)
+                const position = this.network.getPosition(nodeId)
+                // setting the current position is necessary to prevent snap-back to initial position
+                node.x = position.x
+                node.y = position.y
+                node.fixed = true
+                this.data.nodes.update(node)
+            })
+        });
+
+        this.network.on("dragStart", (params) => {
+            params.nodes.forEach((nodeId, index) => {
+                const node = this.data.nodes.get(nodeId)
+                const position = this.network.getPosition(nodeId)
+                // setting the current position is necessary to prevent snap-back to initial position
+                node.x = position.x
+                node.y = position.y
+                node.fixed = false
+                this.data.nodes.update(node)
+
+            });
+        }
+        );
     }
 
     //hides nodes if their main creation property was clicked in the legend 
@@ -648,14 +675,14 @@ isg.Graph = class {
         if (node) {
             OO.ui.confirm('Node already exists in the graph. Do you want to navigate to its position?').done((confirmed) => {
                 if (confirmed) {
-                var pos = this.network.getPosition(data.id);
-                if (pos.x && pos.y) {
-                    input_element.value = "";
-                    input_element.dataset.result = "";
-                    this.clearNodePopUp();
-                    this.network.moveTo(pos)
-                    this.network.fit({ animation: true })
-                }
+                    var pos = this.network.getPosition(data.id);
+                    if (pos.x && pos.y) {
+                        input_element.value = "";
+                        input_element.dataset.result = "";
+                        this.clearNodePopUp();
+                        this.network.moveTo(pos)
+                        this.network.fit({ animation: true })
+                    }
                 }
             });
         }
@@ -670,7 +697,7 @@ isg.Graph = class {
             this.clearNodePopUp();
         }
 
-        
+
     }
     //addEdge popup
     editEdgeWithoutDrag(data, callback) {
