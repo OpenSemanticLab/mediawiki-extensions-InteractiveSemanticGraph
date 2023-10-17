@@ -194,6 +194,22 @@ isg.Graph = class {
             this.network.fit();
         });
         if (!this.config.show_menu) this.resetViewButton.style.display = "none";
+
+        // reset view if graph was hidden and becomes visible
+        // otherwise offset moves graph out of view
+        // see also: https://stackoverflow.com/questions/1462138/event-listener-for-when-element-becomes-visible
+        var observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.intersectionRatio > 0) {
+                    this.network.redraw();
+                    this.network.fit();
+                }
+            });
+        }, {
+            root: document.documentElement,
+        });
+        observer.observe(this.container);
+
     }
 
     getDefaultOptions() {
