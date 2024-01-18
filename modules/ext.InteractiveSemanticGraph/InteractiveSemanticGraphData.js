@@ -11,7 +11,11 @@ isg.Data = class {
         this.nodes = new vis.DataSet([]);
         // create an array with edges
         this.edges = new vis.DataSet([]);
-	this.config = config || {}; //{uri_color_map: {"http://emmo.info/emmo#":  "blue"}};
+        this.config = config || {};
+        this.config = mwjson.util.mergeDeep({
+            //uri_color_map: {"http://emmo.info/emmo#":  "blue"}, //example for color map
+            query_limit: 100,
+        }, this.config);
     }
 
     //The function nodeExists() returns true, if the given node already exists, else false
@@ -50,7 +54,7 @@ isg.Data = class {
     //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
     runQuery(root, properties, nodeID, colors) {
         const deferred = $.Deferred();
-        fetch(isg.util.getSmwQuery(root, properties))
+        fetch(isg.util.getSmwQuery(root, properties, {query_limit: this.config.query_limit}))
             .then(response => response.json())
             .then(data => {
                 if (!nodeID && root) { //first query on root node
@@ -62,7 +66,9 @@ isg.Data = class {
 
                 for (var i = 0; i < properties.length; i++) {
                     var labelOffset = 0;
-                    for (var j = 0; j < data.query.results[root].printouts[properties[i]].length; j++) {
+                    var j_max = data.query.results[root].printouts[properties[i]].length;
+                    if (this.config.query_limit < j_max) j_max = this.config.query_limit;
+                    for (var j = 0; j < j_max; j++) {
 
                         var edgeLabel = properties[i];
                         //handle inverse properties like normal ones
@@ -109,7 +115,8 @@ isg.Data = class {
                         if (isLiteral) nodeColor = "#FFFFFF";
                         var shape = undefined;
                         var image = undefined;
-                        if (id.includes("File:") && (id.includes(".png") || id.includes(".jpeg") || id.includes(".jpg") || id.includes(".tif") || id.includes(".pdf") || id.includes(".bmp") || id.includes(".svg") || id.includes(".gif"))) {
+                        var id_lc = id.toLowerCase();
+                        if (id.includes("File:") && (id_lc.includes(".png") || id_lc.includes(".jpeg") || id_lc.includes(".jpg") || id_lc.includes(".tif") || id_lc.includes(".pdf") || id_lc.includes(".bmp") || id_lc.includes(".svg") || id_lc.includes(".gif"))) {
                             image = mw.config.get("wgScriptPath") + `/index.php?title=Special:Redirect/file/${id.replace("File:", "")}&width=200&height=200`;
                             shape = "image";
                             label = "";

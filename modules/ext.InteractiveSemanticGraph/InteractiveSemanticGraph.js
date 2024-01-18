@@ -74,6 +74,8 @@ isg.Graph = class {
         //Allow custom visnetwork options
         this.options = this.getDefaultOptions();
         this.options = { ...this.options, ...this.config.visnetwork };
+        if (!Array.isArray(this.config.root)) this.config.root = [this.config.root]; //ensure array
+        this.config.root = [...new Set(this.config.root)]; //remove duplicates
 
         //Creates groups in the options and sets them all to hidden:false.
         for (var i = 0; i < this.config.normalizedProperties.length; i++) {
@@ -83,11 +85,13 @@ isg.Graph = class {
         }
 
         if (this.param_nodes_set === false) {
-            this.data.nodes.add({
-                id: this.config.root,
-                label: this.config.root, //todo: query display title
-                color: '#6dbfa9'
-            });
+            for (const root of this.config.root) {
+                this.data.nodes.add({
+                    id: root,
+                    label: root, //todo: query display title
+                    color: '#6dbfa9'
+                });
+            }
         }
 
         //create the network
@@ -96,10 +100,12 @@ isg.Graph = class {
         this.createEventHandler();
 
         if (this.param_nodes_set === false) {
-            this.fetchData(this.config.root, this.config.properties); //auto expand
+            for (const root of this.config.root) {
+                this.fetchData(root, this.config.properties); //auto expand
+            }
         }
 
-        this.nodes_opened = [this.config.root];
+        this.nodes_opened = this.config.root.slice(); //important: create a copy here
         this.loop_counter = 0;
     }
 
@@ -110,7 +116,7 @@ isg.Graph = class {
         var d_nodes = mwjson.util.objectFromCompressedBase64(searchParams.get("nodes"));
         var d_edges = mwjson.util.objectFromCompressedBase64(searchParams.get("edges"));
 
-        this.config.root = d_nodes[0].id;
+        this.config.root = [d_nodes[0].id];
         var prop_array = [];
         for (var i = 0; i < d_nodes.length; i++) {
             this.data.nodes.add(d_nodes[i]);
@@ -188,6 +194,22 @@ isg.Graph = class {
             this.network.fit();
         });
         if (!this.config.show_menu) this.resetViewButton.style.display = "none";
+
+        // reset view if graph was hidden and becomes visible
+        // otherwise offset moves graph out of view
+        // see also: https://stackoverflow.com/questions/1462138/event-listener-for-when-element-becomes-visible
+        var observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.intersectionRatio > 0) {
+                    this.network.redraw();
+                    this.network.fit();
+                }
+            });
+        }, {
+            root: document.documentElement,
+        });
+        observer.observe(this.container);
+
     }
 
     getDefaultOptions() {
@@ -273,6 +295,8 @@ isg.Graph = class {
             });
     }
 
+    // Repeats the initial query on newly opened node until depth limit is reached
+    // ToDo: Rename function
     async getStartIds(node) {
 
         //console.log(node);
@@ -512,6 +536,33 @@ isg.Graph = class {
                 }
             }
         });
+
+        this.network.on("dragEnd", (params) => {
+            console.log("DragEnd");
+            params.nodes.forEach((nodeId) => {
+                const node = this.data.nodes.get(nodeId)
+                const position = this.network.getPosition(nodeId)
+                // setting the current position is necessary to prevent snap-back to initial position
+                node.x = position.x
+                node.y = position.y
+                node.fixed = true
+                this.data.nodes.update(node)
+            })
+        });
+
+        this.network.on("dragStart", (params) => {
+            params.nodes.forEach((nodeId, index) => {
+                const node = this.data.nodes.get(nodeId)
+                const position = this.network.getPosition(nodeId)
+                // setting the current position is necessary to prevent snap-back to initial position
+                node.x = position.x
+                node.y = position.y
+                node.fixed = false
+                this.data.nodes.update(node)
+
+            });
+        }
+        );
     }
 
     //hides nodes if their main creation property was clicked in the legend 
@@ -555,10 +606,13 @@ isg.Graph = class {
         }
     };
 
-    //Checks, if a node has a path over visible edges to the root node.
+    //Checks, if a node has a path over visible edges to the root node(s).
     //If not, the nodes gets hidden
     setNodeVisibilityByVisiblePath(nodeId, rootNodeId) {
-        if (nodeId == rootNodeId) return true; //root is always visible
+        if (!Array.isArray(rootNodeId)) rootNodeId = [rootNodeId]; //ensure array
+        if (rootNodeId.includes(nodeId)) {
+            return true; //root is always visible
+        }
         var node = this.data.nodes.get(nodeId);
         if (node.visited) return !node.hidden //prevent circles. ToDo: Reuse results between runs
         node.visited = true;
@@ -566,7 +620,7 @@ isg.Graph = class {
         var connectedEdgesIds = this.network.getConnectedEdges(nodeId);
         var connectedEdges = this.data.edges.get(connectedEdgesIds);
         connectedEdges.forEach( (edge) => {
-            if (edge.hidden) return; //don't follow hidden edges
+            if (edge.hidden) return false; //don't follow hidden edges
             var connectedNodesIds = this.network.getConnectedNodes(edge.id);
             var connectedNodes = this.data.nodes.get(connectedNodesIds);
             connectedNodes.forEach( (connectedNode) => {
@@ -632,14 +686,33 @@ isg.Graph = class {
             else data.id = "Item:" + mwjson.util.OswId();
             data.url = "/wiki/" + data.id;
         }
-        data.hidden = false;
-        data.physics = false;
-        //console.log(data);
-        input_element.value = "";
-        input_element.dataset.result = "";
-        this.clearNodePopUp();
-        callback(data);
-        this.create_link();
+
+        var node = this.data.nodes.get(data.id)
+        if (node) {
+            OO.ui.confirm('Node already exists in the graph. Do you want to navigate to its position?').done((confirmed) => {
+                if (confirmed) {
+                    var pos = this.network.getPosition(data.id);
+                    if (pos.x && pos.y) {
+                        input_element.value = "";
+                        input_element.dataset.result = "";
+                        this.clearNodePopUp();
+                        this.network.moveTo({position: pos, animation: true});
+                    }
+                }
+            });
+        }
+        else {
+            data.hidden = false;
+            data.physics = false;
+            //console.log(data);
+            callback(data);
+            this.create_link();
+            input_element.value = "";
+            input_element.dataset.result = "";
+            this.clearNodePopUp();
+        }
+
+
     }
     //addEdge popup
     editEdgeWithoutDrag(data, callback) {
@@ -1097,7 +1170,9 @@ isg.Graph = class {
             excludedIds.push(nodeId);
         }
         var reachableNodesTo = [];
-        this.getAllReachableNodesTo(this.config.root, excludedIds, reachableNodesTo);
+        for (const root of this.config.root) {
+            this.getAllReachableNodesTo(root, excludedIds, reachableNodesTo);
+        }
         var nodesToDelete = [];
         var allIds = this.data.nodes.getIds();
         for (var i = 0; i < allIds.length; i++) {

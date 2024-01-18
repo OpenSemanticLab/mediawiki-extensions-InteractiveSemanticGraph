@@ -111,7 +111,7 @@ isg.UI = class {
                     <span id="node-operation" style="cursor: move;">node</span> <br />
                 </div>
                 <div class="modal-body" style="width: 480px;">
-                    <div id="isg-node-label-autocomplete">
+                    <div id="${this.container.id}_isg-node-label-autocomplete">
                         <input id="node-label" class="autocomplete-input" value="" placeholder="Label" /></input>
                         <ul class="autocomplete-result-list"></ul>
                     </div>
@@ -130,7 +130,7 @@ isg.UI = class {
                     <span id="edge-operation" style="cursor: move;">edge</span>
                 </div>
                 <div class="modal-body" style="width: 480px;">
-                    <div id="isg-edge-label-autocomplete">
+                    <div id="${this.container.id}_isg-edge-label-autocomplete">
                         <input id="edge-label" class="autocomplete-input" value="" placeholder="Label" /></input>
                         <ul class="autocomplete-result-list"></ul>
                     </div>
@@ -155,7 +155,7 @@ isg.UI = class {
 
         //init autocompletion
         mwjson.editor.createAutocompleteInput({
-            div_id: "isg-node-label-autocomplete",
+            div_id: this.container.id + "_isg-node-label-autocomplete",
             query: (input) => { return query_prefix + "[[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage|limit=1000"; },
             minInputLen: 1,
             filter: (result, input) => {
@@ -201,7 +201,7 @@ isg.UI = class {
         });
 
         mwjson.editor.createAutocompleteInput({
-            div_id: "isg-edge-label-autocomplete",
+            div_id: this.container.id + "_isg-edge-label-autocomplete",
             query: (input) => { return "[[Category:Property]][[Has_type::Page]]|?Display_title_of=HasDisplayName|?HasDescription|limit=1000"; },
             filter: (result, input) => { return mwjson.util.stripNamespace(result.fulltext).toLowerCase().includes(input.toLowerCase()); },
             _renderResult: (result, props) => {

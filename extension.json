@@ -1,7 +1,7 @@
 {
     "manifest_version":2,
     "name":"InteractiveSemanticGraph",
-    "version":"0.1.12",
+    "version":"0.3.2",
     "author":[
         "[https://github.com/simontaurus Simon Stier]",
         "[https://github.com/AlexanderPraktikum2021 Alexander Triol]"
