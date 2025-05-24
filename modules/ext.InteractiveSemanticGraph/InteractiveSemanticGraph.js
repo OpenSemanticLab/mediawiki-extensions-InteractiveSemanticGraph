@@ -42,7 +42,7 @@ isg.Graph = class {
         this.first_call = true;
 
         //init graph from permalink
-        searchParams = new URLSearchParams(window.location.search);
+        var searchParams = new URLSearchParams(window.location.search);
         if ((searchParams.has('nodes') && !(searchParams.get('nodes') === "")) || this.config.data) {
             this.first_call = false; //prevent auto-expand
             if (this.config.data) {
@@ -112,7 +112,7 @@ isg.Graph = class {
     //Draws graph from url
     read_link() {
         this.param_nodes_set = true;
-        searchParams = new URLSearchParams(window.location.search);
+        var searchParams = new URLSearchParams(window.location.search);
         var d_nodes = mwjson.util.objectFromCompressedBase64(searchParams.get("nodes"));
         var d_edges = mwjson.util.objectFromCompressedBase64(searchParams.get("edges"));
 
@@ -141,7 +141,7 @@ isg.Graph = class {
     //Creates a static link to restore the graph state
     create_link(data, updateWindowLocation = false) {
 
-        searchParams = new URLSearchParams(window.location.search);
+        var searchParams = new URLSearchParams(window.location.search);
         updateWindowLocation = updateWindowLocation || (searchParams.has('permalink') && searchParams.get('permalink') === 'true') || this.config.sync_permalink || searchParams.has('nodes');
 
         if (updateWindowLocation) {
