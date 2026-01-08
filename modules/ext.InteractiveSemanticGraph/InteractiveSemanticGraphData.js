@@ -31,7 +31,7 @@ isg.Data = class {
             return (edge.from === node1 && edge.label === edgeLabel && edge.to === node2);
         });
         var exits = res.length == 0 ? false : true;
-        return exits
+        return exits;
 
     }
 
@@ -185,10 +185,10 @@ isg.Data = class {
                     var type = data.query.results[property].printouts["type"][0];
                     //TODO: Add other types
                     if (type === "http://semantic-mediawiki.org/swivt/1.0#_qty") deferred.resolve("quantity");
-                    deferred.resolve("page")
+                    deferred.resolve("page");
                 }
                 else {
-                    deferred.resolve("page")
+                    deferred.resolve("page");
                 }
             });
         return deferred.promise();
@@ -212,7 +212,7 @@ isg.Data = class {
                     promises.push(promise);
                     promise.then((page) => {
                         this.editNodes[key] = page;
-                        alertString += "Page " + key + " edited!\r\n"
+                        alertString += "Page " + key + " edited!\r\n";
                         mwjson.api.purgePage(page.title).then(() => mwjson.api.purgePage(page.title)); //Double purge
                     }, (error) => {
                         error_occured = true;
@@ -233,7 +233,7 @@ isg.Data = class {
                     api = new mw.Api();
                     api.postWithToken('csrf', params).done(function (data) {
                         //console.log(data);
-                        alertString += "Seite " + key + " wurde gelöscht!\r\n"
+                        alertString += "Seite " + key + " wurde gelöscht!\r\n";
                     });
                 }
 
@@ -256,4 +256,4 @@ isg.Data = class {
             } else { }
         });
     }
-}
+};

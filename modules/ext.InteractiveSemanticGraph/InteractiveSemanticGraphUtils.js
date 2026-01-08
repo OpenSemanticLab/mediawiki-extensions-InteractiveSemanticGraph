@@ -67,9 +67,9 @@ isg.util = class {
             return a.map(function (x) {
                 return b.map(function (y) {
                     return x.concat([y]);
-                })
-            }).reduce(function (a, b) { return a.concat(b) }, [])
-        }, [[]])
+                });
+            }).reduce(function (a, b) { return a.concat(b); }, []);
+        }, [[]]);
     }
 
     //Copies a text into the clipboard
@@ -88,10 +88,10 @@ isg.util = class {
         // calling the copy command
         document.execCommand("copy");
         // removing the input from the document
-        document.body.removeChild(input)
+        document.body.removeChild(input);
     }
 
-}
+};
 
 isg.util.Color = class {
     //Function for random colors
@@ -107,4 +107,4 @@ isg.util.Color = class {
         this.h %= 1;
         return "hsla(" + (360 * this.h) + "," + "70%," + "80%,1)";
     }
-}
+};

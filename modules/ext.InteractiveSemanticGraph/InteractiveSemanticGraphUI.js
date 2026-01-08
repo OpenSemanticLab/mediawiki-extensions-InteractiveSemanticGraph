@@ -37,7 +37,7 @@ isg.UI = class {
     }
 
     createInfoSection() {
-        var tip = '<p><strong>Hinweis:</strong> Um sich einen Pfad zwischen zwei Knoten ausgeben zu lassen, <em>Strg</em> gedrückt halten und die gewünschten zwei Knoten mit der <em>linken Maustaste</em> anklicken. </p>'
+        var tip = '<p><strong>Hinweis:</strong> Um sich einen Pfad zwischen zwei Knoten ausgeben zu lassen, <em>Strg</em> gedrückt halten und die gewünschten zwei Knoten mit der <em>linken Maustaste</em> anklicken. </p>';
         this.container.insertAdjacentHTML('afterbegin', tip);
     }
 
@@ -50,7 +50,7 @@ isg.UI = class {
 
         for (var i = 0; i < properties.length; i++) { //create legend entries only for non-inversed properties
             legendColors[properties[i]] = colors[i];
-            this.addLegendEntry(properties[i], properties[i], colors[i])
+            this.addLegendEntry(properties[i], properties[i], colors[i]);
         }
 
         this.container.append(this.legendDiv);
@@ -178,7 +178,7 @@ isg.UI = class {
                             <div class="wiki-snippet">
                                 ${description}
                             </div>
-                            `},
+                            `;},
             renderMode: "wikitext",
             renderResult: (result, props) => {
                 let description = "";
@@ -218,7 +218,7 @@ isg.UI = class {
                                 </div>
                             </li>
                             ${description ? '<div class="wiki-snippet">' + description + '</div>' : ''}
-                            `},
+                            `;},
             renderMode: "wikitext",
             renderResult: (result, props) => {
                 let description = undefined;
@@ -336,4 +336,4 @@ isg.UI = class {
             document.onmousemove = null;
         }
     }
-}
+};

@@ -32,7 +32,7 @@ isg.Graph = class {
     colors = [];
 
     constructor(container, config) {
-        this.container = container
+        this.container = container;
         this.config = config;
         this.config.show_menu = this.config.show_menu || true;
         this.ui = new isg.UI(this.container, { onLegendClick: (legendEntry) => this.legendFunctionality(legendEntry), legacy_mode: config.legacy_mode });
@@ -223,10 +223,10 @@ isg.Graph = class {
                 enabled: this.config.edit,
                 editEdge: false,
                 deleteNode: (data, callback) => {
-                    this.deleteSelectedNode(data, callback)
+                    this.deleteSelectedNode(data, callback);
                 },
                 deleteEdge: (data, callback) => {
-                    this.deleteSelectedEdge(data, callback)
+                    this.deleteSelectedEdge(data, callback);
                 },
                 addNode: (data, callback) => {
                     // filling in the popup DOM elements
@@ -280,14 +280,14 @@ isg.Graph = class {
     fetchData(root, properties, nodeID) {
         if (this.data.nodes.get(root).isLiteral) return; //don't query on literals
         if (!properties) return;
-        var promise = this.data.fetchData(root, properties, nodeID, this.legendColors)
+        var promise = this.data.fetchData(root, properties, nodeID, this.legendColors);
         promise.then(result => {
                 this.network.setOptions(this.options);
                 this.network.body.emitter.emit('_dataChanged');
                 this.network.redraw();
-                this.create_link(this.data)
+                this.create_link(this.data);
                 if (this.first_call && this.config.depth) {
-                    var first_nodes = this.data.nodes.getIds()
+                    var first_nodes = this.data.nodes.getIds();
                     first_nodes = first_nodes.slice(1);
                     this.getStartIds(first_nodes);
                     this.first_call = false;
@@ -320,7 +320,7 @@ isg.Graph = class {
             var new_nodes_loop = this.data.nodes.getIds();
             //console.log(new_nodes_loop);
             this.getStartIds(new_nodes_loop);
-        }, 300)
+        }, 300);
 
         //getStartIds(nodes.getIds());
         //console.log(nodes.getIds());
@@ -345,20 +345,20 @@ isg.Graph = class {
                             document.querySelectorAll('[id^="fullPath"]')[i].remove();
                         }
                     }
-                    var element = '<div id="fullPath' + pathId + '"></div>'
+                    var element = '<div id="fullPath' + pathId + '"></div>';
                     this.container.children[0].insertAdjacentHTML('afterend', element);
                     var allStringsArray = this.getAllStringsForAllPaths(foundPaths);
                     var stringDiv = this.container.querySelector('#fullPath' + pathId);
                     if (foundPaths.length == 1) {
-                        stringDiv.innerHTML = "<strong>Gefundener Pfad:</strong><br>"
+                        stringDiv.innerHTML = "<strong>Gefundener Pfad:</strong><br>";
                     } else {
-                        stringDiv.innerHTML = "<strong>Gefundene Pfade:</strong><br>"
+                        stringDiv.innerHTML = "<strong>Gefundene Pfade:</strong><br>";
                     }
                     for (var s = 0; s < foundPaths.length; s++) {
                         if (foundPaths.length == 1) {
-                            var pathNumb = ""
+                            var pathNumb = "";
                         } else {
-                            var pathNumb = "<strong>" + (s + 1) + ". Pfad:</strong> <br>"
+                            var pathNumb = "<strong>" + (s + 1) + ". Pfad:</strong> <br>";
                         }
                         stringDiv.innerHTML += pathNumb + "<strong>Knoten: </strong>";
                         for (var t = 0; t < foundPaths[s].length; t++) {
@@ -369,15 +369,15 @@ isg.Graph = class {
                                 stringDiv.innerHTML = stringDiv.innerHTML + currentFoundPath + " - ";
                             }
                         }
-                        stringDiv.innerHTML += "<br>"
-                        stringDiv.innerHTML += "<strong>Kanten:</strong><br>"
+                        stringDiv.innerHTML += "<br>";
+                        stringDiv.innerHTML += "<strong>Kanten:</strong><br>";
                         for (var t = 0; t < allStringsArray[s].length; t++) {
                             var currentString = allStringsArray[s][t];
                             var currentFoundPath = foundPaths[s][t];
                             var stringDiv = this.container.querySelector('#fullPath' + pathId);
                             stringDiv.innerHTML = stringDiv.innerHTML + '&#9679; ' + currentString + '<br>';
                         }
-                        stringDiv.innerHTML += "<br>"
+                        stringDiv.innerHTML += "<br>";
                     }
                     this.nodesClicked = [];
                 }
@@ -420,7 +420,7 @@ isg.Graph = class {
                         }
                     }
                     delete this.objClickedProps["" + params.nodes[0]];
-                    this.create_link(this.data)
+                    this.create_link(this.data);
                     //nodesArray.splice(nodesArray.indexOf(params.nodes[0]), 1);
                 } else {
                     //Node is unexpanded -> expand it
@@ -439,7 +439,7 @@ isg.Graph = class {
         this.network.on("oncontext", (params) => {         
             params.event.preventDefault();
             var timeNow = Date.now();
-            var timeDiff = timeNow - this.start
+            var timeDiff = timeNow - this.start;
             if (timeDiff > 300) {
                 this.start = Date.now();
                 //console.log(this.data.nodes.get(this.network.getNodeAt({ x: params.pointer.DOM.x, y: params.pointer.DOM.y })));
@@ -495,11 +495,11 @@ isg.Graph = class {
                                     ul.append(li);
                                 }
                             }
-                            this.create_link(this.data)
+                            this.create_link(this.data);
 
                             //On left click on one of the properties it creates nodes for the clicked property and if the legend doesnt have that property as a legend entry it is created
                             $(".custom-menu li.custom-menu-property-entry").click((event) => {
-                                var clickedProperty = [$(event.target).attr("data-action")]
+                                var clickedProperty = [$(event.target).attr("data-action")];
                                 var clickedPropertyColor = this.randomColor.randomHSL();
                                 if (!(clickedProperty in this.legendColors)) {
                                     this.legendColors[clickedProperty] = clickedPropertyColor;
@@ -507,7 +507,7 @@ isg.Graph = class {
                                     clickedPropertyColor = this.legendColors[clickedProperty];
                                 }
                                 if (this.objColors[clickedProperty]) {
-                                    clickedPropertyColor = this.objColors[clickedProperty]
+                                    clickedPropertyColor = this.objColors[clickedProperty];
                                 } else {
                                     this.objColors[clickedProperty] = clickedPropertyColor;
                                 }
@@ -540,25 +540,25 @@ isg.Graph = class {
         this.network.on("dragEnd", (params) => {
             console.log("DragEnd");
             params.nodes.forEach((nodeId) => {
-                const node = this.data.nodes.get(nodeId)
-                const position = this.network.getPosition(nodeId)
+                const node = this.data.nodes.get(nodeId);
+                const position = this.network.getPosition(nodeId);
                 // setting the current position is necessary to prevent snap-back to initial position
-                node.x = position.x
-                node.y = position.y
-                node.fixed = true
-                this.data.nodes.update(node)
-            })
+                node.x = position.x;
+                node.y = position.y;
+                node.fixed = true;
+                this.data.nodes.update(node);
+            });
         });
 
         this.network.on("dragStart", (params) => {
             params.nodes.forEach((nodeId, index) => {
-                const node = this.data.nodes.get(nodeId)
-                const position = this.network.getPosition(nodeId)
+                const node = this.data.nodes.get(nodeId);
+                const position = this.network.getPosition(nodeId);
                 // setting the current position is necessary to prevent snap-back to initial position
-                node.x = position.x
-                node.y = position.y
-                node.fixed = false
-                this.data.nodes.update(node)
+                node.x = position.x;
+                node.y = position.y;
+                node.fixed = false;
+                this.data.nodes.update(node);
 
             });
         }
@@ -585,7 +585,7 @@ isg.Graph = class {
         });
         //check each node
         this.data.nodes.forEach( (node) => {
-            this.setNodeVisibilityByVisiblePath(node.id, this.config.root)
+            this.setNodeVisibilityByVisiblePath(node.id, this.config.root);
             //reset visited state. Todo: Reuse visited nodes between runs
             this.data.nodes.forEach( (node) => {
                 node.visited = false;
@@ -597,9 +597,9 @@ isg.Graph = class {
         this.network.redraw();
         var allFalse = Object.keys(this.options.groups).every( (k) => {
             if (k === 'useDefaultGroups') {
-                return true
+                return true;
             }
-            return this.options.groups[k].hidden === false
+            return this.options.groups[k].hidden === false;
         });
         if (allFalse === true) {
             /*this.oldGroups = {};*/
@@ -614,7 +614,7 @@ isg.Graph = class {
             return true; //root is always visible
         }
         var node = this.data.nodes.get(nodeId);
-        if (node.visited) return !node.hidden //prevent circles. ToDo: Reuse results between runs
+        if (node.visited) return !node.hidden; //prevent circles. ToDo: Reuse results between runs
         node.visited = true;
         node.hidden = true;
         var connectedEdgesIds = this.network.getConnectedEdges(nodeId);
@@ -674,7 +674,7 @@ isg.Graph = class {
     }
     //saveNodeData to the graph
     saveNodeData(data, callback) {
-        const input_element = document.getElementById("node-label")
+        const input_element = document.getElementById("node-label");
         data.label = input_element.value;
         if (input_element.dataset.result && input_element.dataset.result !== 'undefined') { //existing page
             const result = JSON.parse(input_element.dataset.result);
@@ -687,7 +687,7 @@ isg.Graph = class {
             data.url = "/wiki/" + data.id;
         }
 
-        var node = this.data.nodes.get(data.id)
+        var node = this.data.nodes.get(data.id);
         if (node) {
             OO.ui.confirm('Node already exists in the graph. Do you want to navigate to its position?').done((confirmed) => {
                 if (confirmed) {
@@ -771,10 +771,10 @@ isg.Graph = class {
         delete toNode.x;
         delete toNode.y;
         if (!toNode.group) {
-            toNode.group = data.label
+            toNode.group = data.label;
         }
         if (!fromNode.group) {
-            fromNode.group = data.label
+            fromNode.group = data.label;
         }
         if (this.legendColors[data.label]) {
             data.color = this.legendColors[data.label];
@@ -803,7 +803,7 @@ isg.Graph = class {
         if (isg.util.isLabelReversed(data.label)) { //reverseOrder
             sub = toNode;
             obj = fromNode;
-            property = reverseLabel(property)
+            property = reverseLabel(property);
         }
         //TODO: make async
         const property_type = await this.data.fetchPropertyType(property);
@@ -832,11 +832,11 @@ isg.Graph = class {
                     }
                     else {
                         if (page.slots['header'] !== "{{#invoke:Entity|header}}") {
-                            page.slots['header'] = "{{#invoke:Entity|header}}"
+                            page.slots['header'] = "{{#invoke:Entity|header}}";
                             page.slots_changed['header'] = true;
                         }
                         if (page.slots['footer'] !== "{{#invoke:Entity|footer}}") {
-                            page.slots['footer'] = "{{#invoke:Entity|footer}}"
+                            page.slots['footer'] = "{{#invoke:Entity|footer}}";
                             page.slots_changed['footer'] = true;
                         }
                         page.slots['jsondata'] = {
@@ -896,11 +896,11 @@ isg.Graph = class {
                 }
                 else {
                     if (page.slots['header'] !== "{{#invoke:Entity|header}}") {
-                        page.slots['header'] = "{{#invoke:Entity|header}}"
+                        page.slots['header'] = "{{#invoke:Entity|header}}";
                         page.slots_changed['header'] = true;
                     }
                     if (page.slots['footer'] !== "{{#invoke:Entity|footer}}") {
-                        page.slots['footer'] = "{{#invoke:Entity|footer}}"
+                        page.slots['footer'] = "{{#invoke:Entity|footer}}";
                         page.slots_changed['footer'] = true;
                     }
                     page.slots['jsondata'] = {
@@ -939,7 +939,7 @@ isg.Graph = class {
                 'label': [{'text': ".. " + property + " ..", 'lang': "en"}],
                 'predicate': "Property:" + property,
                 'object': property_value
-            })
+            });
             page.slots_changed['jsondata'] = true;
         }
         this.data.editNodes[sub.id] = page; //update stored page state    
@@ -1043,7 +1043,7 @@ isg.Graph = class {
                 console.log(page.slots['jsondata']['statements']);
                 page.slots['jsondata']['statements'] = page.slots['jsondata']['statements'].filter(function (statement) {
                     var p = statement.predicate === "Property:" + property;
-                    var o = statement.object === obj
+                    var o = statement.object === obj;
                     return !(p && o);
                 });
                 console.log(page.slots['jsondata']['statements']);
@@ -1060,7 +1060,7 @@ isg.Graph = class {
         //this.data.nodes.remove(this.data.edges.get(data.this.data.edges[0]).to);
         callback(data);
         document.querySelector('.vis-delete').remove();
-        this.create_link(this.data)
+        this.create_link(this.data);
     }
 
     //The function getAllEdgesBetween() returns all edges between two nodes
@@ -1199,5 +1199,5 @@ isg.Graph = class {
             this.data.edges.remove(fromEdges[j]);
         }
     }
-}
+};
 
