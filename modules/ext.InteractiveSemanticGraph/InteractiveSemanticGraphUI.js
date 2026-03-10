@@ -156,45 +156,14 @@ isg.UI = class {
         //init autocompletion
         mwjson.editor.createAutocompleteInput({
             div_id: this.container.id + "_isg-node-label-autocomplete",
-            query: (input) => { return query_prefix + "[[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=HasDisplayName|?HasDescription|?HasImage|limit=1000"; },
+            query: (input) => { return query_prefix + "[[Display_title_of::~*" + input + "*]][[!~*QUERY*]]|?Display_title_of=label|?HasImage=image|limit=1000"; },
             minInputLen: 1,
             filter: (result, input) => {
-                if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0].toLowerCase().includes(input.toLowerCase());
+                if (result.printouts['label'][0]) return result.printouts['label'][0].toLowerCase().includes(input.toLowerCase());
                 else return mwjson.util.stripNamespace(result.fulltext).toLowerCase().includes(input.toLowerCase());
             },
-            _renderResult: (result, props) => {
-                            let description = "";
-                            if (result.printouts['HasDescription'][0]) {
-                                description = result.printouts['HasDescription'][0];
-                                if (description.fulltext) description = description.fulltext; // unconfigured property => type = Page
-                                if (description.Text && description.Text.item && description.Text.item[0]) description = description.Text.item[0]; //multi lang text
-                            }
-                            return `
-                            <li ${props}>
-                                <div class="wiki-title">
-                                    ${result.printouts['HasDisplayName'][0] ? result.printouts['HasDisplayName'][0] + ' (' + result.fulltext + ')' : result.fulltext}
-                                </div>
-                            </li>
-                            <div class="wiki-snippet">
-                                ${description}
-                            </div>
-                            `},
-            renderMode: "wikitext",
-            renderResult: (result, props) => {
-                let description = "";
-                if (result.printouts['HasDescription'][0]) {
-                    description = result.printouts['HasDescription'][0];
-                    if (description.fulltext) description = description.fulltext; // unconfigured property => type = Page
-                    if (description.Text && description.Text.item && description.Text.item[0]) description = description.Text.item[0]; //multi lang text
-                }
-                var wikitext = "";
-                if (result.printouts['HasImage'][0]) wikitext += `[[${result.printouts['HasImage'][0]['fulltext']}|right|x66px|link=]]`;
-                wikitext += `</br> [[${result.fulltext}]]`;
-                if (description) wikitext += `</br>${description}`;
-                return wikitext;
-            },
             getResultValue: result => {
-                if (result.printouts['HasDisplayName'][0]) return result.printouts['HasDisplayName'][0];
+                if (result.printouts['label'][0]) return result.printouts['label'][0];
                 else return mwjson.util.stripNamespace(result.fulltext);
             },
             onSubmit: result => document.querySelector('#node-label').dataset.result = JSON.stringify(result)
