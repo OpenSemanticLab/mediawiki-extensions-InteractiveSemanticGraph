@@ -50,6 +50,44 @@ isg.Data = class {
         return deferred.promise();
     }
 
+    //SMW will not project a property that has no Property: page when its values live on
+    //a subobject: the forward printout of getSmwQuery() comes back empty even though the
+    //property matches fine as a condition. For every property the forward query left
+    //empty, ask it again as an inverse condition and rewrite the answer into the printout
+    //shape runQuery() already consumes, so both cases stay on a single code path.
+    //Returns a promise resolving to the (possibly amended) data.
+    fillEmptyPrintoutsFromInverse(root, properties, data) {
+        var result = data.query && data.query.results ? data.query.results[root] : undefined;
+        if (!result || !result.printouts) return Promise.resolve(data);
+
+        var printouts = result.printouts;
+        var emptyProperties = properties.filter(p => !printouts[p] || printouts[p].length === 0);
+        if (emptyProperties.length === 0) return Promise.resolve(data);
+
+        var requests = emptyProperties.map(property =>
+            fetch(isg.util.getSmwInverseQuery(root, property, {query_limit: this.config.query_limit}))
+                .then(response => response.json())
+                .then(inverseData => {
+                    var rows = inverseData.query && inverseData.query.results ? inverseData.query.results : {};
+                    var targets = Object.keys(rows).map(key => rows[key]);
+                    if (targets.length === 0) return;
+                    //Every row is an existing page, so these three arrays stay aligned 1:1
+                    //and the positional labelOffset below never has a gap to skip.
+                    printouts[property] = targets.map(target => ({
+                        fulltext: target.fulltext,
+                        fullurl: target.fullurl,
+                        exists: target.exists,
+                        displaytitle: target.displaytitle
+                    }));
+                    printouts[property + ".Display title of"] = targets.map(target => isg.util.firstPrintoutValue(target, "Display title of"));
+                    printouts[property + ".Equivalent URI"] = targets.map(target => isg.util.firstPrintoutValue(target, "Equivalent URI"));
+                })
+                .catch(() => { /* leave the property empty, the result loop then skips it */ })
+        );
+
+        return Promise.all(requests).then(() => data);
+    }
+
     //Makes an API call with the given parameters and adds the results to the nodes and edges datasets.
     //With a given nodeID the edges are set to the nodeID, else they are set to the root node.
     runQuery(root, properties, nodeID, colors) {
@@ -64,6 +102,9 @@ isg.Data = class {
                     else if (data.query.results[root].displaytitle) rootNode.label = data.query.results[root].displaytitle;
                 }
 
+                return this.fillEmptyPrintoutsFromInverse(root, properties, data);
+            })
+            .then(data => {
                 for (var i = 0; i < properties.length; i++) {
                     var labelOffset = 0;
                     var j_max = data.query.results[root].printouts[properties[i]].length;

@@ -44,6 +44,37 @@ isg.util = class {
         return url;
     }
 
+    //Creates an API query Url that matches a single property as a condition in the
+    //opposite direction, instead of projecting it as a printout.
+    //SMW will not project a property that has no Property: page when its values live
+    //on a subobject, so the forward printout of getSmwQuery() comes back empty. The
+    //same property still matches as a condition in both directions. Every result row
+    //is then one target page carrying its own fulltext, fullurl, exists and
+    //displaytitle, rather than an array nested under a printout.
+    //root: string - the node the edge starts from
+    //properties: string - a single property, with or without a leading "-"
+    //config: dict
+    //  query_limit: int - max results
+    static getSmwInverseQuery(root, property, config) {
+        //reverseLabel() toggles the prefix, so a forward property becomes the inverse
+        //condition [[-P::root]] and an already inverse one becomes [[P::root]]
+        var condition = isg.util.reverseLabel(property);
+        var url = mw.config.get("wgScriptPath") + `/api.php?action=ask&query=[[${encodeURIComponent(condition)}::${encodeURIComponent(root)}]]`;
+        url += '|?' + encodeURIComponent("Display title of") + "=" + encodeURIComponent("Display title of");
+        url += '|?' + encodeURIComponent("Equivalent URI") + "=" + encodeURIComponent("Equivalent URI");
+        if (config.query_limit) url += "|limit=" + config.query_limit;
+        url += '&format=json';
+        return url;
+    }
+
+    //Returns the first value of a printout of a result row as a string, or "" when the
+    //printout is absent, empty or not a plain value.
+    static firstPrintoutValue(row, key) {
+        var values = row.printouts ? row.printouts[key] : undefined;
+        if (!values || values.length === 0) return "";
+        return typeof values[0] === "string" ? values[0] : "";
+    }
+
     //Given Label is reversed with "-" or "-" is removed
     static reverseLabel(label) {
         if (label[0] == "-") {
