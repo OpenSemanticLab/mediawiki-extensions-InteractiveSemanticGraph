@@ -9,7 +9,7 @@
     "url":"https://github.com/OpenSemanticLab/mediawiki-extensions-InteractiveSemanticGraph",
     "descriptionmsg":"interactive-semantic-graph-desc",
     "namemsg":"interactive-semantic-graph-name",
-    "license-name":"AGPL-3.0-or-later",
+    "license-name":"Apache-2.0",
     "type":"editor",
     "requires":{
         "MediaWiki":">= 1.31",
